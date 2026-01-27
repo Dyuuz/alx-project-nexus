@@ -34,3 +34,11 @@ class CartItem(models.Model):
         else:
             total_amount = self.product.original_price * self.item_quantity
         return total_amount
+    
+class Checkout(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    shipping_address = models.TextField(blank=True, null=True)
+    billing_address = models.TextField(blank=True, null=True)
+    payment_method = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
