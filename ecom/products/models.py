@@ -63,11 +63,11 @@ class Product(models.Model):
         if self.discount_percent != 0:
             self.discount_amount = self.original_price * (self.discount_percent / 100)
         if not self.slug:
-            self.slug = self.create_slug_for_product
+            self.slug = self.generated_slug
         super().save(*args, **kwargs)
 
     @property
-    def create_slug_for_product(self):
+    def generated_slug(self):
         baseURL = slugify(self.name)
         product_slug = baseURL
         counter = 1
