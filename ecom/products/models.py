@@ -69,9 +69,9 @@ class Product(models.Model):
     @property
     def create_slug_for_product(self):
         baseURL = slugify(self.name)
-        slug = baseURL
+        product_slug = baseURL
         counter = 1
-        while Product.objects.filter(slug=slug).exists():
-            slug = f"{baseURL}-{counter}"
+        while Product.objects.filter(slug=product_slug).exists():
+            product_slug = f"{baseURL}-{counter}"
             counter += 1
-        return slug    
+        return product_slug
