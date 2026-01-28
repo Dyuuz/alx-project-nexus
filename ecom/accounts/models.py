@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
+from django.conf import settings
 import uuid, os
 
 # Create your models here.
@@ -113,3 +114,10 @@ class BankAccount(models.Model):
        if self.name:
            self.name = self.name.strip()  # keeps exact casing, removes extra spaces
        super().save(*args, **kwargs)
+
+class BlackListAccessToken(models.Model):
+    jti = models.CharField(max_length=255, unique=True)
+    blacklisted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.jti
