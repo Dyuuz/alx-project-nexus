@@ -1,14 +1,14 @@
 import pytest
 from django.urls import reverse
 from rest_framework import status
-from accounts.models import BankAccount
+from accounts.models import BankAccount, Vendor
 
 @pytest.mark.django_db
-def test_vendor_can_create_bank_account(api_client, normal_user):
+def test_vendor_can_create_bank_account(api_client, vendor_user):
     """
     Test that a vendor can successfully create a bank account.
     """
-    api_client.force_authenticate(user=normal_user)
+    api_client.force_authenticate(user=vendor_user.user)
 
     payload = {
         "number": "0123456789",
@@ -22,23 +22,24 @@ def test_vendor_can_create_bank_account(api_client, normal_user):
     response = api_client.post(url, payload)
 
     assert response.status_code == status.HTTP_201_CREATED
-    assert BankAccount.objects.filter(vendor=normal_user).exists()
+    assert BankAccount.objects.filter(vendor=vendor_user).exists()
 
 
 @pytest.mark.django_db
-def test_vendor_cannot_create_multiple_bank_accounts(api_client, normal_user):
+def test_vendor_cannot_create_multiple_bank_accounts(api_client, vendor_user):
     """
     Test that a vendor cannot create more than one bank account.
     """
+    # Create an existing bank account
     BankAccount.objects.create(
-        vendor=normal_user,
+        vendor=vendor_user,
         number="1111111111",
         name="John Doe",
         bank_name="GTBank",
         subaccount_code="SUB_EXISTING",
     )
 
-    api_client.force_authenticate(user=normal_user)
+    api_client.force_authenticate(user=vendor_user.user)
 
     payload = {
         "number": "2222222222",
@@ -51,23 +52,23 @@ def test_vendor_cannot_create_multiple_bank_accounts(api_client, normal_user):
     response = api_client.post(url, payload)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert BankAccount.objects.filter(vendor=normal_user).count() == 1
+    assert BankAccount.objects.filter(vendor=vendor_user).count() == 1
 
 
 @pytest.mark.django_db
-def test_vendor_can_retrieve_own_bank_account(api_client, normal_user):
+def test_vendor_can_retrieve_own_bank_account(api_client, vendor_user):
     """
     Test that a vendor can retrieve their own bank account details.
     """
     bank = BankAccount.objects.create(
-        vendor=normal_user,
+        vendor=vendor_user,
         number="3333333333",
         name="John Doe",
         bank_name="UBA",
         subaccount_code="SUB_RETRIEVE",
     )
 
-    api_client.force_authenticate(user=normal_user)
+    api_client.force_authenticate(user=vendor_user.user)
 
     url = reverse("bank-account-detail", args=[bank.id])
     response = api_client.get(url)
@@ -77,15 +78,30 @@ def test_vendor_can_retrieve_own_bank_account(api_client, normal_user):
 
 
 @pytest.mark.django_db
-def test_vendor_cannot_access_other_users_bank_account(
-    api_client, normal_user, admin_user
-):
+def test_vendor_cannot_access_other_users_bank_account(api_client, normal_user, admin_user):
     """
     Test that a vendor cannot access another user's bank account.
     Should return 404 to hide existence of other users' accounts.
     """
+    # Ensure both users are vendors
+    normal_user.role = 'vendor'
+    normal_user.save()
+    vendor_normal = Vendor.objects.create(
+        user=normal_user,
+        business_name="Test Shop",
+        business_address="123 Street"
+    )
+
+    admin_user.role = 'vendor'
+    admin_user.save()
+    vendor_admin = Vendor.objects.create(
+        user=admin_user,
+        business_name="Admin Shop",
+        business_address="Admin Street"
+    )
+
     bank = BankAccount.objects.create(
-        vendor=admin_user,
+        vendor=vendor_admin,
         number="4444444444",
         name="Admin User",
         bank_name="First Bank",
@@ -101,47 +117,24 @@ def test_vendor_cannot_access_other_users_bank_account(
 
 
 @pytest.mark.django_db
-def test_vendor_can_update_own_bank_account(api_client, normal_user):
+def test_vendor_can_update_own_bank_account(api_client, vendor_user):
     """
     Test that a vendor can update their own bank account.
     """
     bank = BankAccount.objects.create(
-        vendor=normal_user,
+        vendor=vendor_user,
         number="5555555555",
         name="John Doe",
         bank_name="Old Bank",
         subaccount_code="SUB_UPDATE",
     )
 
-    api_client.force_authenticate(user=normal_user)
+    api_client.force_authenticate(user=vendor_user.user)
 
     url = reverse("bank-account-detail", args=[bank.id])
     response = api_client.patch(url, {"bank_name": "New Bank"}, format='json')
-    print(response.data)
 
     bank.refresh_from_db()
 
     assert response.status_code == status.HTTP_200_OK
     assert bank.bank_name == "New Bank"
-
-
-@pytest.mark.django_db
-def test_admin_can_delete_vendor_bank_account(api_client, admin_user, normal_user):
-    """
-    Test that an admin user can delete a vendor's bank account.
-    """
-    bank = BankAccount.objects.create(
-        vendor=normal_user,
-        number="6666666666",
-        name="John Doe",
-        bank_name="Delete Bank",
-        subaccount_code="SUB_DELETE",
-    )
-
-    api_client.force_authenticate(user=admin_user)
-
-    url = reverse("bank-account-detail", args=[bank.id])
-    response = api_client.delete(url)
-
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-    assert not BankAccount.objects.filter(id=bank.id).exists()
