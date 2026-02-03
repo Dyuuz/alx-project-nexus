@@ -36,7 +36,7 @@ class VendorSerializer(serializers.ModelSerializer):
 
         if user.role == "vendor":
             raise serializers.ValidationError(
-                "User role must not be 'vendor' to create Vendor profile"
+                "A vendor profile already exists for this user."
             )
 
         return attrs
