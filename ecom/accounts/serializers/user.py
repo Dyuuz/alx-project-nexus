@@ -22,7 +22,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "phone_number",
-            "role",
         )
 
     def create(self, validated_data):
