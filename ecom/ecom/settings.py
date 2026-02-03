@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 from dotenv import load_dotenv
 import environ
 import os
@@ -77,6 +78,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ecom.wsgi.application'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=45),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+
+    # Security
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+
+    # Auth header
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "UPDATE_LAST_LOGIN": True,
+}
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -121,6 +142,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
