@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-
 class UserCreateSerializer(serializers.ModelSerializer):
     """
     Serializer for creating a new User instance.
