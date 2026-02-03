@@ -1,27 +1,53 @@
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
+from django.contrib.auth.models import BaseUserManager
 from django.conf import settings
 import uuid, os
 
-# Create your models here.
+class CustomManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email is required")
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("role", "admin")
+
+        if not extra_fields.get("is_staff"):
+            raise ValueError("Superuser must have is_staff=True")
+        if not extra_fields.get("is_superuser"):
+            raise ValueError("Superuser must have is_superuser=True")
+
+        return self.create_user(email, password, **extra_fields)
+
 class CustomUser(AbstractUser):
+    objects = CustomManager()
+
     ROLE_CHOICES = (
         ("customer", "Customer"),
         ("vendor", "Vendor"),
         ("admin", "Admin"),
     )
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     phone_number = PhoneNumberField(unique=True)
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="customer")
 
     email_verified = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     username = None
     USERNAME_FIELD = "email"
@@ -47,21 +73,28 @@ class CustomUser(AbstractUser):
     
 class Vendor(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     user = models.OneToOneField(
         CustomUser,
         on_delete=models.CASCADE,
-        related_name="vendor_profile"
+        related_name="vendor_profile",
     )
 
     business_name = models.CharField(max_length=100)
     business_address = models.TextField()
     verified = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.business_name} ({self.user.email})"    
     
     def clean(self):
         """
         Normalize vendor business data.
         """
+
         if self.business_name:
             self.business_name = self.business_name.title().strip()
 
@@ -74,6 +107,7 @@ class Vendor(models.Model):
         
 
 class AuthSession(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="auth_sessions")
     
     # OTP fields
@@ -98,7 +132,7 @@ class AuthSession(models.Model):
 class BankAccount(models.Model):
    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
    vendor = models.OneToOneField(
-       settings.AUTH_USER_MODEL,
+       Vendor,
        on_delete=models.CASCADE,
        related_name='bank_details'
    )
