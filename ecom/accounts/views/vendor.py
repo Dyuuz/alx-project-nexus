@@ -57,7 +57,7 @@ class VendorViewSet(ModelViewSet):
                 {
                     "status": "success",
                     "code": "NO_DATA_FETCHED",
-                    "message": "No existing bank account.",
+                    "message": "No existing vendor account.",
                     "data": None
                 },
                 status=status.HTTP_200_OK
