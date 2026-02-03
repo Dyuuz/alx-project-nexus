@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from accounts.models import BankAccount
+from accounts.models import BankAccount, Vendor
 
 class BankAccountCreateSerializer(serializers.ModelSerializer):
     """
@@ -25,17 +25,17 @@ class BankAccountCreateSerializer(serializers.ModelSerializer):
         """
         Create a new BankAccount instance.
 
-        Associates the new bank account with the currently authenticated user
-        (from request context) before saving.
-        
-        Args:
-            validated_data (dict): The validated input data.
-        
-        Returns:
-            BankAccount: The newly created BankAccount instance.
+        Associates the new bank account with the currently authenticated vendor
+        before saving.
         """
         request = self.context["request"]
-        validated_data["vendor"] = request.user
+
+        try:
+            vendor = request.user.vendor_profile  # ✅ get Vendor instance
+        except Vendor.DoesNotExist:
+            raise serializers.ValidationError("User is not a vendor")
+
+        validated_data["vendor"] = vendor  # ✅ assign Vendor instance
         return super().create(validated_data)
 
 

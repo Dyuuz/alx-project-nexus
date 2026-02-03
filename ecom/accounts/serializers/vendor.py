@@ -18,6 +18,28 @@ class VendorSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "verified", "updated_at")
+        
+    def validate(self, attrs):
+        """
+        Validate the incoming data for creating a Vendor profile.
+
+        Args:
+            attrs (dict): The incoming data to validate.
+
+        Raises:
+            serializers.ValidationError: _description_
+
+        Returns:
+            _type_: _description_
+        """
+        user = self.context["request"].user
+
+        if user.role == "vendor":
+            raise serializers.ValidationError(
+                "User role must not be 'vendor' to create Vendor profile"
+            )
+
+        return attrs
 
 
     def create(self, validated_data):
