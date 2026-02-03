@@ -1,5 +1,6 @@
 from django.db import transaction
 from accounts.models import BankAccount
+from rest_framework.exceptions import ValidationError
 
 
 @transaction.atomic
@@ -18,10 +19,15 @@ def create_bank_account(vendor, data):
     Returns:
         BankAccount: The newly created BankAccount instance.
     """
-    bank_account = BankAccount.objects.create(vendor=vendor, **data)
-    
-    # Background task to verify bank account and send a mail when verified
-    return bank_account
+    if BankAccount.objects.filter(vendor=vendor).exists():
+        raise ValidationError({
+            "detail": "Vendor already has a bank account."
+        })
+
+    return BankAccount.objects.create(
+        vendor=vendor,
+        **data
+    )
 
 
 
