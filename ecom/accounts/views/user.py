@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from accounts.serializers.login import LoginSerializer
 from accounts.serializers.user import (
     UserCreateSerializer,
     UserUpdateSerializer,
@@ -136,8 +137,11 @@ class LoginViewSet(viewsets.ViewSet):
     renderer_classes = [JSONRenderer]
 
     def create(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        password = serializer.validated_data['password']
 
         user = authenticate(request, email=email, password=password)
 
