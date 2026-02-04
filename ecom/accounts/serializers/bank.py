@@ -19,7 +19,10 @@ class BankAccountCreateSerializer(serializers.ModelSerializer):
             "subaccount_code",
         )
         read_only_fields = ("id", "verified", "updated_at")
-
+        extra_kwargs = {
+            'number': {'validators': []},
+            'subaccount_code': {'validators': []},
+        }
 
     def create(self, validated_data):
         """
@@ -29,46 +32,40 @@ class BankAccountCreateSerializer(serializers.ModelSerializer):
         before saving.
         """
         request = self.context["request"]
-
-        try:
-            vendor = request.user.vendor_profile  # ✅ get Vendor instance
-        except Vendor.DoesNotExist:
-            raise serializers.ValidationError("User is not a vendor")
-
-        validated_data["vendor"] = vendor  # ✅ assign Vendor instance
+        vendor = request.user.vendor_profile
+        validated_data["vendor"] = vendor
         return super().create(validated_data)
-
 
     def validate(self, attrs):
         """
-        Validate that the bank account number is unique per vendor.
-
-        If updating an existing instance, it excludes the current instance
-        from the uniqueness check.
-        
-        Args:
-            attrs (dict): The input data for validation.
-        
-        Raises:
-            serializers.ValidationError: If a bank account with the same number
-            already exists for the vendor.
-        
-        Returns:
-            dict: The validated input data.
+        Validate the user role before creating a BankAccount.
+        - Reject customers entirely.
+        - Allow vendors only if they don't already have a bank account.
         """
-        vendor = self.instance.vendor if self.instance else attrs.get("vendor")
-        number = self.instance.number if self.instance else attrs.get("number")
+        request = self.context['request']
+        user = request.user
 
-        # Exclude current instance from uniqueness check
-        qs = BankAccount.objects.filter(vendor=vendor, number=number)
-        if self.instance:
-            qs = qs.exclude(id=self.instance.id)
+        # Reject customers
+        if user.role == "customer":
+            raise serializers.ValidationError(
+                "Customers are not allowed to create bank accounts."
+            )
 
-        if qs.exists():
-            raise serializers.ValidationError("Bank account already exists for this vendor.")
+        # Only allow vendors
+        if user.role == "vendor":
+            try:
+                vendor = user.vendor_profile
+            except Vendor.DoesNotExist:
+                raise serializers.ValidationError("User is not a vendor.")
+
+            # Check if this vendor already has a bank account
+            if BankAccount.objects.filter(vendor=vendor).exists():
+                raise serializers.ValidationError(
+                    "Oops! A bank account for you already exists."
+                )
         return attrs
-    
 
+    
 class BankAccountUpdateSerializer(serializers.ModelSerializer):
     """
     Serializer for updating an existing BankAccount instance.
