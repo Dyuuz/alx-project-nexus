@@ -38,8 +38,13 @@ def update_user(user: User, data: dict) -> User:
     Returns:
         User: The updated User instance.
     """
+    password = data.pop("password", None)
     for field, value in data.items():
         setattr(user, field, value)
+    
+    if password:
+        user.set_password(password)
+    
     user.save()
     return user
 
