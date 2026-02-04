@@ -10,4 +10,3 @@ This repository serves as a central reference point for:
 - Challenges encountered and how they were solved
 - Best practices and personal engineering takeaways
 
-The goal is not just to document *what* was learned, but *how* and *why* those learnings matter in real-world backend systems.
