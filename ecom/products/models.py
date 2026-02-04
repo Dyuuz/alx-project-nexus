@@ -35,7 +35,7 @@ class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=50, unique=True, db_index=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='category')
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='products')
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='vendor')
     image = models.ImageField(upload_to='images/', blank=True)
     public_id = models.CharField(blank=True)
     srcURL = models.URLField(blank=True)
