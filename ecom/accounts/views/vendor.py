@@ -15,7 +15,7 @@ from accounts.services.vendor_service import (
     update_vendor,
     delete_vendor,
 )
-from accounts.permissions import IsOwner, IsAdminOrSelf, IsAdmin
+from accounts.permissions import IsAdminOrSelf, IsAdmin
 
 
 class VendorViewSet(ModelViewSet):

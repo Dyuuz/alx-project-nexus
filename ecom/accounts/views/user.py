@@ -81,13 +81,11 @@ class UserViewSet(ModelViewSet):
             status=status.HTTP_200_OK
         )
         
-   # Override create
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = create_user(serializer.validated_data)
 
-        # Serialize the created user
         read_serializer = UserReadSerializer(user)
 
         return Response(
@@ -100,7 +98,6 @@ class UserViewSet(ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    # Override update
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)

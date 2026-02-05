@@ -17,7 +17,7 @@ from accounts.services.bank_service import (
     delete_bank_account,
 )
 from accounts.permissions import (
-    IsAdminOrSelf, IsBankAccountOwner, IsAdmin
+    IsBankAccountOwner, IsAdmin
 )
 
 class BankAccountViewSet(ModelViewSet):
