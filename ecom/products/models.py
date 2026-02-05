@@ -7,8 +7,8 @@ import uuid
 # Create your models here.
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200, unique=True)
-    image = models.ImageField(upload_to='images/', blank=True)
+    name = models.CharField(max_length=200, unique=True, blank=False, null=False)
+    image = models.ImageField(upload_to='images/', blank=False, null=False)
     slug = models.SlugField(max_length=50, unique=True, db_index=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True) 
@@ -33,16 +33,16 @@ class Category(models.Model):
 
 class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    slug = models.SlugField(max_length=50, unique=True, db_index=True, blank=True)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='category')
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='vendor')
+    slug = models.SlugField(max_length=50, unique=True, db_index=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products')
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='products')
     image = models.ImageField(upload_to='images/', blank=True)
     public_id = models.CharField(blank=True)
     srcURL = models.URLField(blank=True)
     name = models.CharField(max_length=200)
     description = models.TextField()
     stock = models.PositiveIntegerField(default=0)
-    original_price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
     discount_percent = models.PositiveIntegerField(
                     validators=[MinValueValidator(0), MaxValueValidator(70)],
                     default=0, help_text="Discount percentage (0-70).", null=True, blank=True
@@ -53,15 +53,12 @@ class Product(models.Model):
         default=0,
         null=True, blank=True
     )
-    date_added = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Calculate discount amount if discount percent is set
         if self.name:
             self.name = self.name.title().strip()
-        if self.discount_percent != 0:
-            self.discount_amount = self.original_price * (self.discount_percent / 100)
         if not self.slug:
             self.slug = self.generated_slug
         super().save(*args, **kwargs)
