@@ -31,3 +31,15 @@ class IsProductOwnerOrAdmin(BasePermission):
             return obj.vendor_id == user.vendor_profile.id
 
         return False
+
+class IsAdmin(BasePermission):
+    """
+    Allows access only to admin/staff users.
+    """
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.is_staff
+        )
