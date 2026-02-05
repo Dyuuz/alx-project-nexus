@@ -1,68 +1,55 @@
 from rest_framework.permissions import BasePermission
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import permissions
+from accounts.models import Vendor
 
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == "admin"
+        return request.user.is_authenticated and request.user.is_staff == True
     
 class IsAdminOrSelf(BasePermission):
     """
     Permission:
     - Staff can do anything
-    - Users can edit their own user profile (obj is CustomUser)
-    - Users can edit their own related objects (Vendor, Bank, etc.)
+    - Users can edit their own user profile
+    - Users can edit objects that belong to them
     """
 
     def has_permission(self, request, view):
-        return request.user.is_authenticated
+        return request.user and request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        # Staff can do anything
+        # Admin override
         if request.user.is_staff:
             return True
 
-        # User editing their own profile
-        if isinstance(obj, request.user.__class__) and obj.pk == request.user.pk:
+        # User editing their own user object
+        if obj == request.user:
             return True
 
-        # User editing their own related objects
+        # Object directly linked to user
         if hasattr(obj, "user") and obj.user == request.user:
             return True
-        if hasattr(obj, "vendor") and obj.vendor == request.user:
+
+        # Object linked through vendor
+        if hasattr(obj, "vendor") and obj.vendor.user == request.user:
             return True
 
         return False
-    
+
+
 class IsBankAccountOwner(permissions.BasePermission):
     """
     Only the vendor who owns the bank account can access it.
     Admins bypass this check.
     """
+
     def has_object_permission(self, request, view, obj):
         if request.user.is_staff:
             return True
-        # Compare Vendor instance, not User
+
         try:
             return obj.vendor == request.user.vendor_profile
-        except Vendor.DoesNotExist:
+        
+        except ObjectDoesNotExist:
             return False
-
-
-class IsAdminOrSelf_vendor(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated
-
-    def has_object_permission(self, request, view, obj):
-        return request.user.is_staff or obj.user == request.user
-
-class IsBankAccountOwner(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        return obj.vendor.user == request.user
-
-class IsOwner(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        return getattr(obj, 'user', None) == request.user or getattr(obj, 'vendor', None) == request.user
-    
-class IsVendor(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == "vendor"
