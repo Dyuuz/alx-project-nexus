@@ -11,8 +11,7 @@ from products.services.products import (
     update_product,
     delete_product,
 )
-from accounts.permissions import IsProductOwnerOrAdmin, IsAdmin
-
+from products.permissions import IsProductOwnerOrAdmin, IsAdmin
 
 class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
