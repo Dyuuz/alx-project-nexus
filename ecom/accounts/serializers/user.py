@@ -51,21 +51,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Password must contain at least one digit.")
         return value
 
-    def create(self, validated_data):
-        """
-        Create and return a new User instance.
-
-        Uses `create_user` method from the User model to ensure
-        the password is properly hashed.
-
-        Args:
-            validated_data (dict): Validated input data.
-
-        Returns:
-            User: The newly created user instance.
-        """
-        return User.objects.create_user(**validated_data)
-
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     """
@@ -112,27 +97,6 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if not any(char.isdigit() for char in value):
             raise serializers.ValidationError("Password must contain at least one digit.")
         return value
-
-    def update(self, instance, validated_data):
-        """
-        Update the User instance with validated data.
-
-        Handles password separately to ensure it is hashed.
-
-        Args:
-            instance (User): The user instance to update.
-            validated_data (dict): Validated input data.
-
-        Returns:
-            User: The updated user instance.
-        """
-        password = validated_data.pop("password", None)
-        for field, value in validated_data.items():
-            setattr(instance, field, value)
-        if password:
-            instance.set_password(password)
-        instance.save()
-        return instance
 
 
 class UserReadSerializer(serializers.ModelSerializer):
