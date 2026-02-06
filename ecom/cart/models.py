@@ -15,6 +15,15 @@ class Cart(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="unpaid")
     
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["customer", "status"],
+                condition=models.Q(status="unpaid"),
+                name="unique_unpaid_cart_per_customer",
+            )
+        ]
+    
     @property
     def total_amount(self):
         return sum(item.total_amount for item in self.items.all())
@@ -24,20 +33,31 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     item_quantity = models.PositiveIntegerField(default=1)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cart", "product"],
+                name="unique_product_per_cart"
+            )
+        ]
 
     @property
     def total_amount(self):
         if self.product.discount_percent != 0:
-            discount_amount = self.product.original_price * (self.product.discount_percent / 100)
-            total_amount = discount_amount * self.item_quantity
+            discounted_price = self.product.original_price * (1 - self.product.discount_percent / 100)
+            total_amount = discounted_price * self.item_quantity
         else:
             total_amount = self.product.original_price * self.item_quantity
         return total_amount
     
 class Checkout(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    cart = models.OneToOneField(
+        Cart,
+        on_delete=models.CASCADE,
+        related_name="checkout"
+    )
     shipping_address = models.TextField(blank=True, null=True)
     billing_address = models.TextField(blank=True, null=True)
     payment_method = models.CharField(max_length=50, blank=True, null=True)
