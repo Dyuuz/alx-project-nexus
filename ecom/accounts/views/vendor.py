@@ -21,6 +21,7 @@ from accounts.permissions import IsAdminOrSelf, IsAdmin
 class VendorViewSet(ModelViewSet):
     serializer_class = VendorSerializer
     renderer_classes = [JSONRenderer]
+    http_method_names = ["get", "post", "patch", "delete"]
 
     def get_queryset(self):
         if self.request.user.is_staff:

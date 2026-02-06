@@ -26,6 +26,7 @@ User = get_user_model()
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     renderer_classes = [JSONRenderer]
+    http_method_names = ["get", "post", "patch", "delete"]
     
     def get_queryset(self):
         user = self.request.user
