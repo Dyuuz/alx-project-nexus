@@ -24,28 +24,33 @@ def create_user(data: dict) -> User:
     return User.objects.create_user(**data)
 
 
+
 @transaction.atomic
-def update_user(user: User, data: dict) -> User:
-    """
-    Update an existing User instance.
+def update_user(user, data: dict):
+    m2m_fields = []
 
-    Updates all provided fields in the `data` dictionary and saves the user.
-
-    Args:
-        user (User): The User instance to update.
-        data (dict): Dictionary of fields to update.
-
-    Returns:
-        User: The updated User instance.
-    """
-    password = data.pop("password", None)
     for field, value in data.items():
-        setattr(user, field, value)
-    
-    if password:
-        user.set_password(password)
-    
+
+        # ✅ Handle password correctly
+        if field == "password":
+            if value:
+                user.set_password(value)
+            continue
+
+        attr = getattr(type(user), field, None)
+
+        # Handle ManyToMany fields
+        if hasattr(attr, "field") and attr.field.many_to_many:
+            m2m_fields.append((field, value))
+        else:
+            setattr(user, field, value)
+
     user.save()
+
+    # Handle M2M separately
+    for field, value in m2m_fields:
+        getattr(user, field).set(value)
+
     return user
 
 
