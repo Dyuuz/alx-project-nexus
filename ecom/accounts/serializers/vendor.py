@@ -101,6 +101,7 @@ class VendorReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vendor
         fields = [
+            "id",
             "business_name",
             "business_address",
             "verified",
