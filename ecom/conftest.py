@@ -63,7 +63,7 @@ def product_vendor_user(db):
         business_name="Vendor Shop",
         business_address="Lagos",
     )
-    return user  # ✅ return CustomUser, NOT Vendor
+    return user
 
 @pytest.fixture
 def other_vendor_user(db):
@@ -86,3 +86,14 @@ def other_vendor_user(db):
 @pytest.fixture
 def category(db):
     return Category.objects.create(name="Electronics")
+
+@pytest.fixture
+def product(category, product_vendor_user):
+    return Product.objects.create(
+        name="Test Product",
+        description="Test product description",
+        original_price=5000,
+        discount_percent=0,
+        category=category,
+        vendor=product_vendor_user.vendor_profile,
+    )
