@@ -114,7 +114,7 @@ class CheckoutViewSet(ModelViewSet):
         )
         
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="confirm")
     def confirm(self, request):
         """
         Confirm the checkout and lock the associated cart.
