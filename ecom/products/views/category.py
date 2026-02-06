@@ -17,6 +17,7 @@ from products.permissions import IsAdmin
 class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
     renderer_classes = [JSONRenderer]
+    http_method_names = ["get", "post", "patch", "delete"]
 
     def get_queryset(self):
         # Publicly readable categories

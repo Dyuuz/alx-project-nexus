@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from products.models import Product
+from rest_framework.exceptions import PermissionDenied
 from products.serializers.products import ProductSerializer
 from products.services.products import (
     create_product,
@@ -16,6 +17,7 @@ from products.permissions import IsProductOwnerOrAdmin, IsAdmin
 class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
     renderer_classes = [JSONRenderer]
+    http_method_names = ["get", "post", "patch", "delete"]
     
     def get_queryset(self):
         user = self.request.user
@@ -25,8 +27,9 @@ class ProductViewSet(ModelViewSet):
 
         if user.role == "vendor" and hasattr(user, "vendor_profile"):
             return Product.objects.filter(vendor=user.vendor_profile)
-
-        return Product.objects.none()
+        
+        raise PermissionDenied("You do not have permission to view products.")
+        # return Product.objects.none()
 
     def get_permissions(self):
         if self.action == "create":
@@ -108,6 +111,6 @@ class ProductViewSet(ModelViewSet):
                 "code": "DELETE_SUCCESSFUL",
                 "message": "Product deleted successfully.",
             },
-            status=status.HTTP_204_NO_CONTENT,
+            status=status.HTTP_200_OK,
         )
 
