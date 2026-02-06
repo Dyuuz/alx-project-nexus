@@ -2,9 +2,7 @@ import pytest
 from rest_framework import status
 from django.urls import reverse
 
-from cart.models import Cart, CartItem
-from products.models import Product
-
+from cart.models import Cart
 
 @pytest.mark.django_db
 def test_user_can_create_cart(api_client, normal_user):

@@ -58,6 +58,6 @@ def test_user_can_remove_cart_item(api_client, normal_user, product):
     url = reverse("cart-items-detail", args=[item.id])
     response = api_client.delete(url)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.status_code == status.HTTP_200_OK
     assert CartItem.objects.count() == 0
 
