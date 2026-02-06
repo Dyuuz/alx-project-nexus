@@ -1,6 +1,7 @@
 from django.db import models
 from accounts.models import CustomUser
 from products.models import Product
+from decimal import Decimal
 import uuid
 
 # Create your models here.
@@ -44,12 +45,15 @@ class CartItem(models.Model):
 
     @property
     def total_amount(self):
-        if self.product.discount_percent != 0:
-            discounted_price = self.product.original_price * (1 - self.product.discount_percent / 100)
-            total_amount = discounted_price * self.item_quantity
-        else:
-            total_amount = self.product.original_price * self.item_quantity
-        return total_amount
+        price = self.product.original_price
+        quantity = self.item_quantity
+
+        if self.product.discount_percent:
+            discount = Decimal(self.product.discount_percent) / Decimal("100")
+            discounted_price = price * (Decimal("1") - discount)
+            return discounted_price * quantity
+
+        return price * quantity
     
 class Checkout(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
