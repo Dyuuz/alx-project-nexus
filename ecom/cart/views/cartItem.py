@@ -99,5 +99,13 @@ class CartItemViewSet(ModelViewSet):
         cart_item_id = kwargs.get("pk")
 
         CartService.remove_item(cart, cart_item_id)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        
+        return Response(
+            {
+                "status": "success",
+                "code": "DELETE_SUCCESSFUL",
+                "message": "Cart Item deleted successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
 
