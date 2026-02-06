@@ -54,7 +54,8 @@ def test_confirm_checkout_locks_cart(api_client, normal_user, product):
     Checkout.objects.create(
         cart=cart,
         shipping_address="Lagos",
-        payment_method="card"
+        payment_method="card",
+        billing_address="Lagos, Nigeria",
     )
 
     url = reverse("checkout-confirm")
