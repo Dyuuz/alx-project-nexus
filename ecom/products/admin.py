@@ -1,10 +1,12 @@
 from django.contrib import admin
-from products.models import Product
+from products.models import Product, Category
 from products.services.products import (
     create_product,
     update_product,
     delete_product,
 )
+
+admin.site.register(Category)
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
