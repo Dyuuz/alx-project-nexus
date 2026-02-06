@@ -67,6 +67,9 @@ class CheckoutService:
         if not checkout.payment_method:
             raise ValidationError("Payment method is required.")
 
+        if not checkout.billing_address:
+            raise ValidationError("Billing address is required.")
+
         cart.status = "pending"
         cart.save(update_fields=["status"])
 
