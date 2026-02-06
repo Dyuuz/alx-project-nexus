@@ -16,10 +16,22 @@ class CartViewSet(ViewSet):
     and restricts access to customer-only users.
     """
     permission_classes = [IsAuthenticated, IsCustomer]
+    http_method_names = ["get"]
 
     def retrieve(self, request, pk=None):
         """
         Retrieve the current user's active cart.
+
+        Automatically creates an unpaid cart if one does not already exist,
+        guaranteeing that the client always receives a valid cart response.
+        """
+        cart_instance = CartService.get_or_create_cart(request.user)
+        serializer = cart.CartSerializer(cart_instance)
+        return Response(serializer.data)
+    
+    def list(self, request):
+        """
+        List the current user's active cart.
 
         Automatically creates an unpaid cart if one does not already exist,
         guaranteeing that the client always receives a valid cart response.
