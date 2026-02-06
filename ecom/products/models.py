@@ -33,7 +33,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    slug = models.SlugField(max_length=50, unique=True, db_index=True)
+    slug = models.SlugField(max_length=50, unique=True, db_index=True, blank=True,null=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products')
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='products')
     image = models.ImageField(upload_to='images/', blank=True)
