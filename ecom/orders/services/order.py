@@ -43,11 +43,6 @@ class OrderService:
 
         # Lock cart items rows for consistent read
         cart_items = CartItem.objects.select_for_update().filter(cart=cart).select_related("product")
-
-        # Optional stock enforcement (recommended at order time)
-        # If your Product has `stock`, enforce it here
-        
-        
         
         for item in cart_items:
             product: Product = item.product
