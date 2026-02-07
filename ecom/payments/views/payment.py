@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.renderers import JSONRenderer
 
 from payments.models import Payment
 from payments.serializers.payment import (
@@ -19,6 +20,7 @@ class PaymentViewSet(ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentReadSerializer
     permission_classes = [IsAuthenticated]
+    renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post"]
 
     def get_queryset(self):
@@ -47,13 +49,22 @@ class PaymentViewSet(ModelViewSet):
         POST /payments/initiate/
         body: { "order_id": "...", "provider": "internal" }
         """
-        order_id = request.data.get("order_id")
-        if not order_id:
-            return Response({"detail": "order_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_REQUEST",
+                    "message": "Invalid request data.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        order_id = serializer.validated_data["order_id"]
 
         order = Order.objects.get(id=order_id, customer=request.user)
 
-        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         provider = serializer.validated_data.get("provider", "internal")
