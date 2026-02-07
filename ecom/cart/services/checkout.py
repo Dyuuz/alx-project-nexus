@@ -56,7 +56,8 @@ class CheckoutService:
         if cart.status != "unpaid":
             raise ValidationError("Cart is already locked.")
 
-        if not hasattr(cart, "checkout"):
+        checkout = getattr(cart, "checkout", None)
+        if not checkout:
             raise ValidationError("Checkout does not exist.")
 
         checkout = cart.checkout
@@ -69,6 +70,29 @@ class CheckoutService:
 
         if not checkout.billing_address:
             raise ValidationError("Billing address is required.")
+        
+        errors = []
+
+        for item in cart.items.select_related("product"):
+            product = item.product
+            if item.item_quantity > product.stock:
+                errors.append(
+                    {
+                        "product_id": str(product.id),
+                        "product_name": product.name,
+                        "requested_quantity": item.item_quantity,
+                        "available_stock": product.stock,
+                    }
+                )
+
+        if errors:
+            raise ValidationError(
+                {
+                    "code": "INSUFFICIENT_STOCK",
+                    "message": "Some items exceed available stock.",
+                    "items": errors,
+                }
+            )
 
         cart.status = "pending"
         cart.save(update_fields=["status"])
