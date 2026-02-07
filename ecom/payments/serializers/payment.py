@@ -10,10 +10,10 @@ class PaymentReadSerializer(serializers.ModelSerializer):
 
 
 class PaymentInitiateSerializer(serializers.Serializer):
-    order_id = serializers.UUIDField()
+    order_id = serializers.UUIDField(required=True)
     provider = serializers.CharField(required=False, default="internal")
 
 
 class PaymentConfirmSerializer(serializers.Serializer):
-    reference = serializers.CharField()
+    reference = serializers.CharField(required=True)
     
