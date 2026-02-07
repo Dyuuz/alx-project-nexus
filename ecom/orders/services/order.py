@@ -1,7 +1,8 @@
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import F
 from rest_framework.exceptions import ValidationError
+import rest_framework.exceptions as drf_exc
 
 from cart.models import Cart
 from cart.models import CartItem
@@ -22,9 +23,16 @@ class OrderService:
         try:
             return OrderService.create_order_from_confirmed_checkout(cart)
 
-        except ValidationError:
-            Cart.objects.filter(id=cart.id).update(status="unpaid")
-            raise
+        except drf_exc.ValidationError as exc:
+            try:
+                Cart.objects.filter(id=cart.id).exclude(status="unpaid").update(status="unpaid")
+                cart.refresh_from_db()
+                print(f"Cart {cart.id} reverted to unpaid.")
+                
+            except IntegrityError:
+                print("Recovery skipped due to constraint.")
+
+            raise exc
     
     @staticmethod
     @transaction.atomic
@@ -36,10 +44,12 @@ class OrderService:
         if cart.status != "pending":
             raise ValidationError("Cart must be confirmed before creating an order.")
 
-        if hasattr(cart, "order"):
-            return cart.order  # idempotent
-
-        if not hasattr(cart, "checkout"):
+        existing_order = Order.objects.filter(cart=cart).first()
+        if existing_order:
+            return existing_order # idempotent
+        
+        checkout = getattr(cart, "checkout", None)
+        if not checkout:
             raise ValidationError("Checkout does not exist for this cart.")
 
         checkout: Checkout = cart.checkout
@@ -55,9 +65,9 @@ class OrderService:
 
             if hasattr(product, "stock"):
                 if item.item_quantity > product.stock:
+                    print("err")
                     raise ValidationError(f"Insufficient stock for {getattr(product, 'name', 'product')}.")
-
-
+        
         order = Order.objects.create(
             customer=cart.customer,
             cart=cart,
@@ -68,20 +78,17 @@ class OrderService:
         )
 
         # Snapshot each item
-        bulk_items = []
-        for ci in cart_items:
-            p = ci.product
-            bulk_items.append(
-                OrderItem(
-                    order=order,
-                    product_id=p.id,
-                    product_name=getattr(p, "name", "Product"),
-                    unit_price=p.original_price,
-                    discount_percent=int(getattr(p, "discount_percent", 0) or 0),
-                    quantity=ci.item_quantity,
-                )
-            )
-        OrderItem.objects.bulk_create(bulk_items)
+        OrderItem.objects.bulk_create([
+        OrderItem(
+            order=order,
+            product_id=ci.product.id,
+            product_name=ci.product.name,
+            unit_price=ci.product.original_price,
+            discount_percent=int(ci.product.discount_percent or 0),
+            quantity=ci.item_quantity,
+        )
+        for ci in cart_items
+        ])
 
         return order
 
