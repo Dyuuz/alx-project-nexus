@@ -2,7 +2,9 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
+from rest_framework.renderers import JSONRenderer
 
 from cart.services.cart import CartService
 from orders.models import Order
@@ -15,6 +17,7 @@ class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderReadSerializer
     permission_classes = [IsAuthenticated]
+    renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post"]
 
     def get_queryset(self):
@@ -50,8 +53,19 @@ class OrderViewSet(ModelViewSet):
                 {"detail": "No confirmed cart found. Confirm checkout first."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        order = OrderService.create_order_with_cart_recovery(pending_cart)
+        print("Pending cart found:", pending_cart)
+        
+        try:
+            order = OrderService.create_order_with_cart_recovery(pending_cart)
+        except ValidationError as exc:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "ORDER_CREATION_FAILED",
+                    "message": exc.detail[0].__str__(),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         
         return Response(
             {
