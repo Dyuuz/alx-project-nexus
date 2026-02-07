@@ -6,7 +6,7 @@ from cart.models import Cart, CartItem
 from products.models import Product
 
 
-class CartService:
+class CartItemService:
     """
     Service layer responsible for managing cart operations.
 
@@ -14,19 +14,6 @@ class CartService:
     modification, and item management to ensure consistency
     across all entry points.
     """
-    
-    @staticmethod
-    def get_or_create_cart(user):
-        """
-        Retrieve an existing unpaid cart for the user or create one if none exists.
-
-        Ensures that a user has at most one active (unpaid) cart at any time.
-        """
-        cart, _ = Cart.objects.get_or_create(
-            customer=user,
-            status="unpaid"
-        )
-        return cart
 
     @staticmethod
     @transaction.atomic
