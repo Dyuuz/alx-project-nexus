@@ -13,6 +13,12 @@ from orders.models import Order, OrderItem
 class OrderService:
     @staticmethod
     def create_order_with_cart_recovery(cart):
+        """
+        Creates an order from a confirmed checkout with automatic cart recovery on failure.
+
+        On validation errors, the cart is reverted to "unpaid" to allow user correction
+        before retrying order creation.
+        """
         try:
             return OrderService.create_order_from_confirmed_checkout(cart)
 
