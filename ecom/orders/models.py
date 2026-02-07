@@ -24,6 +24,13 @@ class Order(models.Model):
     payment_method = models.CharField(max_length=50)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["customer"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     @property
     def total_amount(self) -> Decimal:
