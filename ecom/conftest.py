@@ -95,5 +95,6 @@ def product(category, product_vendor_user):
         original_price=5000,
         discount_percent=0,
         category=category,
+        stock=1,
         vendor=product_vendor_user.vendor_profile,
     )
