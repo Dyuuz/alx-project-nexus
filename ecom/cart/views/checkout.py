@@ -5,7 +5,8 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.renderers import JSONRenderer
 
-from cart.services.cartItem import CartService
+from cart.services.cartItem import CartItemService
+from cart.services.cart import CartService
 from cart.models import Checkout
 from cart.serializers.checkout import CheckoutSerializer
 from cart.services.checkout import CheckoutService

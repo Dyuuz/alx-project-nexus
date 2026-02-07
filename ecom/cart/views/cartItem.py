@@ -6,7 +6,8 @@ from rest_framework import status
 
 from cart.models import CartItem
 from cart.serializers import cart, cartItem
-from cart.services.cartItem import CartService
+from cart.services.cartItem import CartItemService
+from cart.services.cart import CartService
 from cart.permissions import IsCustomer
 
 
@@ -57,7 +58,7 @@ class CartItemViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        cart_item = CartService.add_item(
+        cart_item = CartItemService.add_item(
             cart=cart,
             product_id=serializer.validated_data["product_id"],
             quantity=serializer.validated_data["item_quantity"],
@@ -83,7 +84,7 @@ class CartItemViewSet(ModelViewSet):
 
         quantity = serializer.validated_data["item_quantity"]
 
-        cart_item = CartService.update_item(cart, cart_item_id, quantity)
+        cart_item = CartItemService.update_item(cart, cart_item_id, quantity)
 
         if cart_item is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -98,7 +99,7 @@ class CartItemViewSet(ModelViewSet):
         cart = CartService.get_or_create_cart(request.user)
         cart_item_id = kwargs.get("pk")
 
-        CartService.remove_item(cart, cart_item_id)
+        CartItemService.remove_item(cart, cart_item_id)
         
         return Response(
             {

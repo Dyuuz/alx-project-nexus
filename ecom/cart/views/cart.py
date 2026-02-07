@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from cart.serializers import cart
-from cart.services.cartItem import CartService
+from cart.services.cart import CartService
 from cart.permissions import IsCustomer
 
 
