@@ -5,18 +5,32 @@ from rest_framework.exceptions import ValidationError
 
 from cart.models import Cart, CartItem, Checkout
 from orders.services.order import OrderService
+from cart.services.checkout import CheckoutService
 from orders.models import Order
 from payments.models import Payment
 
 
 @pytest.mark.django_db
 def test_customer_can_initiate_payment(api_client, normal_user, product):
+    """
+    Ensure a customer can initiate payment for an order.
+
+    Verifies that a payment record is created after checkout
+    confirmation and order creation, with status set to pending.
+    """
+    
     api_client.force_authenticate(user=normal_user)
 
-    cart = Cart.objects.create(customer=normal_user, status="pending")
+    cart = Cart.objects.create(customer=normal_user)
     CartItem.objects.create(cart=cart, product=product, item_quantity=1)
-    Checkout.objects.create(cart=cart, shipping_address="Lagos", billing_address="Lagos", payment_method="card")
+    checkout = Checkout.objects.create(cart=cart, shipping_address="Lagos", billing_address="Lagos", payment_method="card")
 
+    # Confirm checkout
+    # response = api_client.post(reverse("payments-initiate"), {"cart_id": str(cart.id)}, format="json")
+    # or
+    CheckoutService.confirm_checkout(cart)
+    
+    cart.refresh_from_db()
     order = OrderService.create_order_with_cart_recovery(cart)
 
     url = reverse("payments-initiate")
@@ -32,9 +46,16 @@ def test_customer_can_initiate_payment(api_client, normal_user, product):
 def test_customer_cannot_create_order_above_product_stock(
     api_client, normal_user, product
 ):
+    """
+    Ensure order creation fails when requested quantity exceeds stock.
+
+    Verifies that no order or payment is created when stock
+    validation fails.
+    """
+    
     api_client.force_authenticate(user=normal_user)
 
-    cart = Cart.objects.create(customer=normal_user, status="pending")
+    cart = Cart.objects.create(customer=normal_user)
     CartItem.objects.create(cart=cart, product=product, item_quantity=3)
     Checkout.objects.create(
         cart=cart,
@@ -52,12 +73,22 @@ def test_customer_cannot_create_order_above_product_stock(
 
 @pytest.mark.django_db
 def test_confirm_payment_marks_order_paid(api_client, normal_user, product):
+    """
+    Ensure confirming a payment marks the order and cart as paid.
+
+    Verifies that payment confirmation updates the payment,
+    order, and cart states correctly.
+    """
+    
     api_client.force_authenticate(user=normal_user)
 
-    cart = Cart.objects.create(customer=normal_user, status="pending")
+    cart = Cart.objects.create(customer=normal_user)
     CartItem.objects.create(cart=cart, product=product, item_quantity=1)
     Checkout.objects.create(cart=cart, shipping_address="Lagos", billing_address="Lagos", payment_method="card")
 
+    CheckoutService.confirm_checkout(cart)
+    
+    cart.refresh_from_db()
     order = OrderService.create_order_with_cart_recovery(cart)
 
     # initiate first
