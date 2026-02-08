@@ -33,3 +33,10 @@ class CheckoutSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+
+class ConfirmCheckoutSerializer(serializers.Serializer):
+    """
+    Validates the cart ID required to confirm a checkout.
+    """
+    cart_id = serializers.UUIDField()
