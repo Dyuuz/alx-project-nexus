@@ -11,6 +11,12 @@ class OrderCreateFromCheckoutSerializer(serializers.Serializer):
 
 
 class OrderReadSerializer(serializers.ModelSerializer):
+    """
+    Serializer for reading order details.
+
+    Returns order information along with its items and calculated total
+    amount. All fields are read-only and intended for response output only.
+    """
     items = OrderItemReadSerializer(many=True, read_only=True)
     total_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
@@ -26,3 +32,9 @@ class OrderReadSerializer(serializers.ModelSerializer):
             "items",
             "total_amount",
         )
+
+class CreateOrderSerializer(serializers.Serializer):
+    """
+    Validates the cart ID required to create an order.
+    """
+    cart_id = serializers.UUIDField()
