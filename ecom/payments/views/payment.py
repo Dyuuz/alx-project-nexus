@@ -17,6 +17,13 @@ from orders.permissions import IsCustomer
 
 
 class PaymentViewSet(ModelViewSet):
+    """
+    Handles payment retrieval, initiation, and confirmation.
+
+    Allows customers to initiate and confirm payments for their orders,
+    while admins can view all payment records.
+    """
+    
     queryset = Payment.objects.all()
     serializer_class = PaymentReadSerializer
     permission_classes = [IsAuthenticated]
@@ -24,12 +31,25 @@ class PaymentViewSet(ModelViewSet):
     http_method_names = ["get", "post"]
 
     def get_queryset(self):
+        """
+        Return payments visible to the requesting user.
+
+        - Admin users can access all payments.
+        - Customers can only access payments linked to their orders.
+        """
         user = self.request.user
         if getattr(user, "is_staff", False):
             return Payment.objects.all()
         return Payment.objects.filter(order__customer=user)
 
     def get_permissions(self):
+        """
+        Apply permissions based on the current action.
+
+        - Listing and retrieval require ownership or admin access.
+        - Payment initiation and confirmation are restricted to customers.
+        """
+        
         if self.action in ["list", "retrieve"]:
             return [IsAuthenticated(), IsPaymentOwnerOrAdmin()]
         if self.action in ["initiate", "confirm"]:
@@ -37,6 +57,13 @@ class PaymentViewSet(ModelViewSet):
         return [IsAuthenticated()]
 
     def get_serializer_class(self):
+        """
+        Select the appropriate serializer for the action.
+
+        Uses write serializers for payment initiation and confirmation,
+        and a read serializer for all other actions.
+        """
+        
         if self.action == "initiate":
             return PaymentInitiateSerializer
         if self.action == "confirm":
@@ -48,6 +75,11 @@ class PaymentViewSet(ModelViewSet):
         """
         POST /payments/initiate/
         body: { "order_id": "...", "provider": "internal" }
+
+        Initiate a payment for an order.
+
+        Validates the request data, ensures the order belongs to the
+        authenticated user, and creates a pending payment record.
         """
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
@@ -86,6 +118,11 @@ class PaymentViewSet(ModelViewSet):
         """
         POST /payments/confirm/
         body: { "reference": "..." }
+        
+        Confirm a payment using its reference.
+
+        Marks the payment as paid and updates the related
+        order and cart states.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
