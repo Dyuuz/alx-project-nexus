@@ -19,3 +19,15 @@ pytest-cov>=5.0
 python-dotenv>=1.0
 Pillow==10.4.0
 django-cors-headers>=4.3
+
+# Background task processing
+celery>=5.3
+
+# Redis message broker
+redis>=5.0
+
+# Store Celery task results in Django
+django-celery-results>=2.5
+
+# Scheduled and periodic Celery tasks
+django-celery-beat>=2.6
