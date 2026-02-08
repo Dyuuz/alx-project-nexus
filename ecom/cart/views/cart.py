@@ -27,7 +27,16 @@ class CartViewSet(ViewSet):
         """
         cart_instance = CartService.get_or_create_cart(request.user)
         serializer = cart.CartSerializer(cart_instance)
-        return Response(serializer.data)
+        
+        return Response(
+            {
+                "status": "success",
+                "code": "FETCH_SUCCESSFUL",
+                "message": "Cart retrieved successfully.",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
     
     def list(self, request):
         """
@@ -38,4 +47,13 @@ class CartViewSet(ViewSet):
         """
         cart_instance = CartService.get_or_create_cart(request.user)
         serializer = cart.CartSerializer(cart_instance)
-        return Response(serializer.data)
+        
+        return Response(
+            {
+                "status": "success",
+                "code": "FETCH_SUCCESSFUL",
+                "message": "Cart retrieved successfully.",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )

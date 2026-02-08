@@ -4,11 +4,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.renderers import JSONRenderer
+from django.shortcuts import get_object_or_404
 
 from cart.services.cartItem import CartItemService
 from cart.services.cart import CartService
-from cart.models import Checkout
-from cart.serializers.checkout import CheckoutSerializer
+from cart.models import Checkout, Cart
+from cart.serializers.checkout import CheckoutSerializer, ConfirmCheckoutSerializer
 from cart.services.checkout import CheckoutService
 from cart.permissions import IsCustomer
 
@@ -92,7 +93,13 @@ class CheckoutViewSet(ModelViewSet):
         Validates that the cart is eligible for checkout updates
         before applying any changes.
         """
-        cart = CartService.get_or_create_cart(request.user)
+        serializer = ConfirmCheckoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cart = get_object_or_404(
+            Cart,
+            pk=serializer.validated_data["cart_id"],
+            customer=request.user,
+        )
 
         serializer = CheckoutSerializer(
             data=request.data,
@@ -109,6 +116,7 @@ class CheckoutViewSet(ModelViewSet):
             {
                 "status": "success",
                 "code": "UPDATE_SUCCESSFUL",
+                "message": "Checkout updated successfully.",
                 "data": CheckoutSerializer(checkout).data,
             },
             status=status.HTTP_200_OK,
@@ -123,7 +131,14 @@ class CheckoutViewSet(ModelViewSet):
         Once confirmed, the cart can no longer be modified and is
         ready for order creation.
         """
-        cart = CartService.get_or_create_cart(request.user)
+        serializer = ConfirmCheckoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cart = get_object_or_404(
+            Cart,
+            pk=serializer.validated_data["cart_id"],
+            customer=request.user,
+        )   
+        
         checkout = CheckoutService.confirm_checkout(cart)
 
         return Response(

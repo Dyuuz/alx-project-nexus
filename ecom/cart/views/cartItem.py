@@ -58,17 +58,33 @@ class CartItemViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        cart_item = CartItemService.add_item(
+        cart_item, append = CartItemService.add_item(
             cart=cart,
             product_id=serializer.validated_data["product_id"],
             quantity=serializer.validated_data["item_quantity"],
         )
 
+        if append:
+            return Response(
+                {
+                    "status": "success",
+                    "code": "UPDATED_SUCCESSFUL",
+                    "message": "Cart Item quantity updated successfully.",
+                    "data" : cartItem.CartItemSerializer(cart_item).data
+                },
+                status=status.HTTP_200_OK,
+            )
+
         return Response(
-            cartItem.CartItemSerializer(cart_item).data,
+            {
+                "status": "success",
+                "code": "CREATE_SUCCESSFUL",
+                "message": "Cart Item created successfully.",
+                "data" : cartItem.CartItemSerializer(cart_item).data
+            },
             status=status.HTTP_201_CREATED,
         )
-
+        
 
     def partial_update(self, request, *args, **kwargs):
         """
@@ -87,9 +103,24 @@ class CartItemViewSet(ModelViewSet):
         cart_item = CartItemService.update_item(cart, cart_item_id, quantity)
 
         if cart_item is None:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(cartItem.CartItemSerializer(cart_item).data)
+            return Response(
+                {
+                    "status": "success",
+                    "code": "DELETE_SUCCESSFUL",
+                    "message": "Cart Item deleted successfully due to zero or negative quantity.",
+                },
+                status=status.HTTP_204_NO_CONTENT,
+            )
+        
+        return Response(
+            {
+                "status": "success",
+                "code": "UPDATE_SUCCESSFUL",
+                "message": "Cart Item updated successfully.",
+                "data" : cartItem.CartItemSerializer(cart_item).data
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
     def destroy(self, request, *args, **kwargs):
