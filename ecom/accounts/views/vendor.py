@@ -19,16 +19,46 @@ from accounts.permissions import IsAdminOrSelf, IsAdmin
 
 
 class VendorViewSet(ModelViewSet):
+    """
+    Handles vendor account management for the platform.
+
+    This ViewSet allows authenticated users to create and manage a single
+    vendor account linked to their profile, while granting administrators
+    full access to all vendor records.
+
+    Core responsibilities:
+    - Enforce a one-vendor-per-user constraint
+    - Apply role-based access control for vendor operations
+    - Expose safe CRUD endpoints using action-specific serializers
+    - Delegate business logic to the service layer for consistency
+
+    Regular users can only view and update their own vendor account,
+    while destructive actions are restricted to administrators.
+    """
     serializer_class = VendorSerializer
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_queryset(self):
+        """
+        Return the appropriate vendor queryset based on the requesting user.
+
+        - Staff users can access all vendor records.
+        - Non-staff users are limited to their own vendor account.
+
+        This prevents unauthorized access to other vendors' data.
+        """
         if self.request.user.is_staff:
             return Vendor.objects.all()
         return Vendor.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
+        """
+        Select the serializer class based on the current action.
+
+        Uses write serializers for creation and updates, and a read-only
+        serializer for retrieval operations to ensure data integrity.
+        """
         if self.action == "create":
             return VendorSerializer
         if self.action in ["update", "partial_update"]:
@@ -36,6 +66,13 @@ class VendorViewSet(ModelViewSet):
         return VendorReadSerializer
 
     def get_permissions(self):
+        """
+        Assign permissions dynamically according to the action.
+
+        Ensures only authenticated users can create vendors, owners or
+        admins can update or retrieve vendor data, and only admins can
+        delete vendor records.
+        """
         if self.action == "create":
             return [IsAuthenticated()]
 
@@ -51,6 +88,12 @@ class VendorViewSet(ModelViewSet):
         return [IsAuthenticated()]
     
     def list(self, request, *args, **kwargs):
+        """
+        Retrieve the vendor account associated with the requesting user.
+
+        Returns a success response with null data if no vendor account
+        exists, ensuring a consistent response shape for clients.
+        """
         bank_account = self.get_queryset().first()
 
         if not bank_account:
@@ -77,6 +120,15 @@ class VendorViewSet(ModelViewSet):
         )
 
     def create(self, request, *args, **kwargs):
+        """
+        Create a new vendor account for the authenticated user.
+
+        - Validates incoming data.
+        - Prevents users from creating multiple vendor accounts.
+        - Delegates creation logic to the service layer.
+
+        Ensures one-to-one relationship between user and vendor.
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -108,6 +160,15 @@ class VendorViewSet(ModelViewSet):
 
 
     def update(self, request, *args, **kwargs):
+        """
+        Update an existing vendor account.
+
+        - Allows partial updates.
+        - Restricts access to admins or the vendor owner.
+        - Delegates update logic to the service layer.
+
+        Guarantees controlled and atomic updates.
+        """
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -126,6 +187,14 @@ class VendorViewSet(ModelViewSet):
         )
 
     def perform_destroy(self, instance):
+        """
+        Delete a vendor account.
+
+        - Restricted to admin users.
+        - Delegates deletion logic to the service layer.
+
+        Allows future extensions such as soft deletes or audit logging.
+        """
         delete_vendor(instance)
         
         return Response(
