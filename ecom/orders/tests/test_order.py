@@ -110,6 +110,5 @@ def test_vendor_cannot_create_order(api_client, other_vendor_user):
 
     url = reverse("orders-create-from-checkout")
     response = api_client.post(url, {})
-    print(response.data)
 
     assert response.status_code in (status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED)
