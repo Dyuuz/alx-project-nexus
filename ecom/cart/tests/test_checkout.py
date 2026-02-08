@@ -59,7 +59,11 @@ def test_confirm_checkout_locks_cart(api_client, normal_user, product):
     )
 
     url = reverse("checkout-confirm")
-    response = api_client.post(url)
+    response = api_client.post(
+        url,
+        data={"cart_id": str(cart.id)},
+        format="json",
+    )
 
     cart.refresh_from_db()
 
