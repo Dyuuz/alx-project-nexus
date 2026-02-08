@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from accounts.models import CustomUser
 from products.models import Product
 from decimal import Decimal
@@ -42,6 +43,13 @@ class CartItem(models.Model):
                 name="unique_product_per_cart"
             )
         ]
+        
+    def append_quantity(self, quantity: int):
+        if self.cart.status != "unpaid":
+            raise ValidationError("This cart can no longer be modified.")
+
+        self.item_quantity += quantity
+        self.save(update_fields=["item_quantity"])
 
     @property
     def total_amount(self):
@@ -54,6 +62,16 @@ class CartItem(models.Model):
             return discounted_price * quantity
 
         return price * quantity
+    
+    def clean(self):
+        if self.cart.status != "unpaid":
+            raise ValidationError(
+                f"You cannot modify items in a cart that is {self.cart.status}."
+            )
+            
+    def save(self, *args, **kwargs):
+        self.full_clean()  # forces clean() to run
+        super().save(*args, **kwargs)
     
 class Checkout(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
