@@ -3,6 +3,7 @@ from django.db import transaction, IntegrityError
 from django.db.models import F
 from rest_framework.exceptions import ValidationError
 import rest_framework.exceptions as drf_exc
+from django.core.exceptions import ObjectDoesNotExist
 
 from cart.models import Cart
 from cart.models import CartItem
@@ -22,6 +23,7 @@ class OrderService:
         """
         try:
             return OrderService.create_order_from_confirmed_checkout(cart)
+            
 
         except drf_exc.ValidationError as exc:
             try:
@@ -38,24 +40,24 @@ class OrderService:
     @transaction.atomic
     def create_order_from_confirmed_checkout(cart: Cart) -> Order:
         """
-        Creates an order only when cart is pending (checkout confirmed).
-        Snapshots pricing & product info into OrderItems.
+        Create an order from a confirmed checkout.
+
+        Only allows order creation when the cart is in a pending state.
+        Snapshots product and pricing data into order items and reduces stock.
+        Ensures idempotency by returning an existing order if one already exists.
         """
         if cart.status != "pending":
-            raise ValidationError("Cart must be confirmed before creating an order.")
+            raise ValidationError("Checkout must be confirmed before an order can be created.")
 
         existing_order = Order.objects.filter(cart=cart).first()
         if existing_order:
             return existing_order # idempotent
         
-        checkout = getattr(cart, "checkout", None)
-        if not checkout:
+        try:
+            checkout: Checkout = cart.checkout
+            
+        except ObjectDoesNotExist:
             raise ValidationError("Checkout does not exist for this cart.")
-
-        checkout: Checkout = cart.checkout
-
-        if not cart.items.exists():
-            raise ValidationError("Cannot create an order from an empty cart.")
 
         # Lock cart items rows for consistent read
         cart_items = CartItem.objects.select_for_update().filter(cart=cart).select_related("product")
@@ -67,6 +69,9 @@ class OrderService:
                 if item.item_quantity > product.stock:
                     print("err")
                     raise ValidationError(f"Insufficient stock for {getattr(product, 'name', 'product')}.")
+                
+            product.stock -= item.item_quantity
+            product.save(update_fields=["stock"])
         
         order = Order.objects.create(
             customer=cart.customer,
@@ -95,12 +100,28 @@ class OrderService:
     @staticmethod
     @transaction.atomic
     def mark_order_paid(order: Order) -> Order:
+        """
+        Mark an order and its cart as paid.
+
+        Validates cart state and item existence before updating statuses.
+        Safe to call multiple times without duplicating effects.
+        """
         if order.status == "paid":
             return order
+
+        cart = order.cart
+
+        if cart.status != "pending":
+            raise ValidationError("Cart must be confirmed before payment.")
+
+        if not cart.items.exists():
+            raise ValidationError("Cannot mark order as paid with an empty cart.")
+
         order.status = "paid"
         order.save(update_fields=["status"])
-        # Mark cart as paid too (optional but consistent)
-        cart = order.cart
+
         cart.status = "paid"
         cart.save(update_fields=["status"])
+
         return order
+
