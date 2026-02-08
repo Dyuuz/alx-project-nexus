@@ -1,6 +1,13 @@
 from rest_framework.permissions import BasePermission
 
 class IsPaymentOwnerOrAdmin(BasePermission):
+    """
+    Allows access to payment owners or admin users.
+
+    Admins have full access, while customers can only
+    access payments linked to their own orders.
+    """
+    
     def has_object_permission(self, request, view, obj):
         if getattr(request.user, "is_staff", False):
             return True
