@@ -24,9 +24,6 @@ class CartItemService:
         Prevents modification if the cart is no longer unpaid and guarantees
         atomicity of the operation.
         """
-        if cart.status != "unpaid":
-            raise ValidationError("This cart can no longer be modified.")
-
         product = get_object_or_404(Product, id=product_id)
 
         cart_item, created = CartItem.objects.get_or_create(
@@ -36,10 +33,11 @@ class CartItemService:
         )
 
         if not created:
-            cart_item.item_quantity += quantity
-            cart_item.save()
+            cart_item.append_quantity(quantity)
 
-        return cart_item
+        append = True if not created else False
+
+        return cart_item, append
 
     @staticmethod
     @transaction.atomic

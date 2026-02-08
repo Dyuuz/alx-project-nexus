@@ -1,5 +1,6 @@
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 
 from cart.models import Checkout
 from cart.models import Cart
@@ -35,7 +36,7 @@ class CheckoutService:
         Prevents modifications if the cart is no longer unpaid.
         """
         if cart.status != "unpaid":
-            raise ValidationError("Checkout can no longer be modified.")
+            raise ValidationError("This cart is locked and can no longer be modified.")
 
         checkout, _ = Checkout.objects.update_or_create(
             cart=cart,
@@ -52,12 +53,15 @@ class CheckoutService:
         Validates required checkout fields and transitions the cart
         into a locked state, preventing further modifications.
         """
+        cart = Cart.objects.select_for_update().get(pk=cart.pk)
         
         if cart.status != "unpaid":
-            raise ValidationError("Cart is already locked.")
-
-        checkout = getattr(cart, "checkout", None)
-        if not checkout:
+            raise ValidationError("This checkout has already been confirmed and cannot be modified.")
+        
+        try:
+            checkout = cart.checkout
+            
+        except ObjectDoesNotExist:
             raise ValidationError("Checkout does not exist.")
 
         checkout = cart.checkout
@@ -70,6 +74,9 @@ class CheckoutService:
 
         if not checkout.billing_address:
             raise ValidationError("Billing address is required.")
+        
+        if not cart.items.exists():
+            raise ValidationError("Cannot create an order from an empty cart.")
         
         errors = []
 
