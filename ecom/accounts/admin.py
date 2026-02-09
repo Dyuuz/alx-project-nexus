@@ -21,15 +21,3 @@ class CustomUserAdmin(admin.ModelAdmin):
     search_fields = ("email", "first_name", "last_name")
 
     ordering = ("-created_at",)
-
-    def save_model(self, request, obj, form, change):
-        """
-        Route admin create/update through the service layer
-        without breaking Django's password handling.
-        """
-        data = form.cleaned_data.copy()
-
-        if change:
-            update_user(obj, data)
-        else:
-            create_user(data)
