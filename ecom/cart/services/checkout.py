@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from cart.models import Checkout
 from cart.models import Cart
+from cart.services.cart_guards import assert_cart_is_modifiable
 
 
 class CheckoutService:
@@ -21,8 +22,7 @@ class CheckoutService:
 
         Only unpaid carts are eligible for checkout creation.
         """
-        if cart.status != "unpaid":
-            raise ValidationError("Checkout is not allowed for this cart.")
+        assert_cart_is_modifiable(cart)
 
         checkout, _ = Checkout.objects.get_or_create(cart=cart)
         return checkout
@@ -35,9 +35,8 @@ class CheckoutService:
 
         Prevents modifications if the cart is no longer unpaid.
         """
-        if cart.status != "unpaid":
-            raise ValidationError("This cart is locked and can no longer be modified.")
-
+        assert_cart_is_modifiable(cart)
+        
         checkout, _ = Checkout.objects.update_or_create(
             cart=cart,
             defaults=data
@@ -55,8 +54,7 @@ class CheckoutService:
         """
         cart = Cart.objects.select_for_update().get(pk=cart.pk)
         
-        if cart.status != "unpaid":
-            raise ValidationError("This checkout has already been confirmed and cannot be modified.")
+        assert_cart_is_modifiable(cart)
         
         try:
             checkout = cart.checkout

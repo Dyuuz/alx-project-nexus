@@ -4,6 +4,8 @@ from rest_framework.exceptions import ValidationError
 
 from cart.models import Cart, CartItem
 from products.models import Product
+from cart.services.cart_guards import assert_cart_is_modifiable
+from django.utils import timezone
 
 
 class CartItemService:
@@ -24,6 +26,8 @@ class CartItemService:
         Prevents modification if the cart is no longer unpaid and guarantees
         atomicity of the operation.
         """
+        assert_cart_is_modifiable(cart)
+        
         product = get_object_or_404(Product, id=product_id)
 
         cart_item, created = CartItem.objects.get_or_create(
@@ -34,7 +38,9 @@ class CartItemService:
 
         if not created:
             cart_item.append_quantity(quantity)
-
+        
+        CartItemService.record_cart_activity(cart)
+        
         append = True if not created else False
 
         return cart_item, append
@@ -43,29 +49,38 @@ class CartItemService:
     @transaction.atomic
     def update_item(cart: Cart, cart_item_id, quantity):
         """
-        Update the quantity of a specific cart item.
+        Update the quantity of a cart item.
 
-        Deletes the item if the quantity is zero or less and blocks
-        updates if the cart is no longer unpaid.
+        - Only unpaid carts can be modified
+        - Quantity must be provided
+        - Item is removed if quantity <= 0
+        - User activity is recorded on successful mutation
         """
-        if cart.status != "unpaid":
-            raise ValidationError("This cart can no longer be modified.")
+        assert_cart_is_modifiable(cart)
 
         if quantity is None:
             raise ValidationError("Item quantity is required.")
 
         cart_item = get_object_or_404(
-            CartItem, id=cart_item_id, cart=cart
+            CartItem,
+            id=cart_item_id,
+            cart=cart,
         )
 
         if quantity <= 0:
             cart_item.delete()
+            CartItemService.record_cart_activity(cart)
             return None
+        
+        if cart_item.item_quantity == quantity:
+            return
 
         cart_item.item_quantity = quantity
-        cart_item.save()
-        return cart_item
+        cart_item.save(update_fields=["item_quantity"])
 
+        CartItemService.record_cart_activity(cart)
+
+        return cart_item
 
     @staticmethod
     @transaction.atomic
@@ -75,10 +90,19 @@ class CartItemService:
 
         Ensures the cart is still unpaid before allowing deletion.
         """
-        if cart.status != "unpaid":
-            raise ValidationError("This cart can no longer be modified.")
+        assert_cart_is_modifiable(cart)
 
         cart_item = get_object_or_404(
             CartItem, id=cart_item_id, cart=cart
         )
         cart_item.delete()
+
+        CartItemService.record_cart_activity(cart)
+        
+    @staticmethod
+    def record_cart_activity(cart):
+        """
+        
+        """
+        cart.last_activity_at = timezone.now()
+        cart.save(update_fields=["last_activity_at"])
