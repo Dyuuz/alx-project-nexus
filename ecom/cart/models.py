@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from accounts.models import CustomUser
 from products.models import Product
 from decimal import Decimal
@@ -11,10 +12,13 @@ class Cart(models.Model):
             ("unpaid", "Unpaid"),
             ("pending", "Pending"),
             ("paid", "Paid"),
+            ("expired", "Expired"),
         ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='carts')
     updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_activity_at = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="unpaid")
     
     class Meta:
@@ -28,13 +32,30 @@ class Cart(models.Model):
     
     @property
     def total_amount(self):
+        """
+        Returns the sum of cartItems associated to a cart
+        """
         return sum(item.total_amount for item in self.items.all())
+    
+    def invalidate(self, reason: str | None = None):
+        """
+        Marks the cart as expired so it can no longer be used.
+        Safe to call multiple times.
+        """
+        if self.status in ("paid", "expired"):
+            return
+
+        self.status = "expired"
+        self.save(update_fields=["status"])
     
 class CartItem(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     item_quantity = models.PositiveIntegerField(default=1)
+    last_activity_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         constraints = [
@@ -84,3 +105,4 @@ class Checkout(models.Model):
     billing_address = models.TextField(blank=True, null=True)
     payment_method = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
