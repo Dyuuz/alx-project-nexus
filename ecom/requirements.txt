@@ -31,3 +31,10 @@ django-celery-results>=2.5
 
 # Scheduled and periodic Celery tasks
 django-celery-beat>=2.6
+
+# url requests
+httpx
+
+# Cloudinary (media storage)
+cloudinary==1.42.2
+django-cloudinary-storage==0.3.0
