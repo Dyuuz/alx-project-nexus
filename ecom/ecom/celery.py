@@ -17,7 +17,7 @@ app.conf.result_backend = os.getenv("REDIS_URL", "redis://localhost:6379/1")
 
 # Load Django settings (CELERY_ namespace)
 app.config_from_object('django.conf:settings', namespace='CELERY')
-app.conf.redis_max_connections = 4
+app.conf.redis_max_connections = 2
 
 app.conf.update(
     worker_hijack_root_logger=False, 
@@ -46,8 +46,8 @@ def debug_task(self):
 
 # CELERY BEAT SCHEDULES
 app.conf.beat_schedule = {
-    # "Clean-abandoned-carts": {
-    #     "task": "core.tasks.carts.cleanup_abandoned_carts",
-    #     "schedule": timedelta(minutes=30),
-    # },
+    "Clean-abandoned-carts": {
+        "task": "core.tasks.carts.cleanup_abandoned_carts",
+        "schedule": timedelta(minutes=1),
+    },
 }
