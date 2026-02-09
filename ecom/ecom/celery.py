@@ -3,13 +3,16 @@ import os
 from celery import Celery
 from celery.schedules import crontab
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecom.settings')
 
 app = Celery('ecom')
 
 # Use Redis as broker and backend
-app.conf.broker_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+app.conf.broker_url = os.getenv("REDIS_URL", "redis://localhost:637/0")
 app.conf.result_backend = os.getenv("REDIS_URL", "redis://localhost:6379/1")
 
 # Load Django settings (CELERY_ namespace)
@@ -17,7 +20,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.conf.redis_max_connections = 4
 
 app.conf.update(
-    worker_hijack_root_logger=False,  # disable default hijack
+    worker_hijack_root_logger=False, 
     worker_log_format="[%(asctime)s: %(levelname)s/%(processName)s] %(message)s",
     worker_task_log_format="[%(asctime)s: %(levelname)s/%(processName)s] %(task_name)s: %(message)s",
     worker_redirect_stdouts=True,
@@ -43,8 +46,8 @@ def debug_task(self):
 
 # CELERY BEAT SCHEDULES
 app.conf.beat_schedule = {
-    "Retry-Whatsapp-msg-service-during-class-reg": {
-        "task": "Main.tasks.retry_missed_whatsapp_message_delivery",
-        "schedule": timedelta(minutes=3),
-    },
+    # "Clean-abandoned-carts": {
+    #     "task": "core.tasks.carts.cleanup_abandoned_carts",
+    #     "schedule": timedelta(minutes=30),
+    # },
 }
