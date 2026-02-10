@@ -14,7 +14,7 @@ from orders.serializers.order import (
     OrderReadSerializer, OrderCreateFromCheckoutSerializer,
     CreateOrderSerializer
 )
-from orders.permissions import IsCustomer, IsOrderOwnerOrAdmin
+from core.permissions import IsCustomer, IsOrderOwnerOrAdmin
 from orders.services.order import OrderService
 
 
@@ -31,6 +31,8 @@ class OrderViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post"]
+    
+    list_message = "Order history retrieved successfully."
 
     def get_queryset(self):
         """
@@ -53,7 +55,7 @@ class OrderViewSet(ModelViewSet):
         - Listing and retrieval require ownership or admin access.
         - Order creation is restricted to authenticated customers.
         """
-        if self.action in ["list", "retrieve"]:
+        if self.action in ["list"]:
             return [IsAuthenticated(), IsOrderOwnerOrAdmin()]
         if self.action in ["create_from_checkout"]:
             return [IsAuthenticated(), IsCustomer()]
