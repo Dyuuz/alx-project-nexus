@@ -29,6 +29,9 @@ class Cart(models.Model):
                 name="unique_unpaid_cart_per_customer",
             )
         ]
+        
+    def __str__(self):
+        return f"Cart - {self.customer.email} - {self.status}"
     
     @property
     def total_amount(self):
@@ -64,6 +67,9 @@ class CartItem(models.Model):
                 name="unique_product_per_cart"
             )
         ]
+        
+    def __str__(self):
+        return f"CartItem - {self.cart.customer.email}"
         
     def append_quantity(self, quantity: int):
         if self.cart.status != "unpaid":
@@ -108,4 +114,4 @@ class Checkout(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return f"Checkout {self.id} - {self.cart.status}"
+        return f"Checkout - {self.cart.customer.email}"
