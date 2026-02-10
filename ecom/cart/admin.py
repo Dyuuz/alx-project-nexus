@@ -93,7 +93,7 @@ class CartAdmin(admin.ModelAdmin):
                 self.message_user(
                     request,
                     f"Cart {cart.id} was skipped because it has not been confirmed for checkout.",
-                    level=messages.INFO,
+                    level=messages.WARNING,
                 )
                 continue
 
@@ -129,6 +129,7 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(Checkout)
 class CheckoutAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in Checkout._meta.fields]
     readonly_fields = ("cart",)
     form = CheckoutAdminForm
 
@@ -155,17 +156,28 @@ class CheckoutAdmin(admin.ModelAdmin):
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
     list_display = ("id", "cart", "product", "item_quantity")
-    readonly_fields = ("cart", "product")
-    
+
     def save_model(self, request, obj, form, change):
         try:
             assert_cart_is_modifiable(obj.cart)
-            
+
+            quantity = form.cleaned_data.get("item_quantity")
+
             if change:
-                quantity = form.cleaned_data.get("item_quantity")
-                
-                CartItemService.update_item(obj.cart, obj.id, quantity=quantity)
-            
+                CartItemService.update_item(
+                    cart=obj.cart,
+                    cart_item_id=obj.id,
+                    quantity=quantity,
+                )
+            else:
+                CartItemService.add_item(
+                    cart=obj.cart,
+                    product_id=obj.product.id,
+                    quantity=quantity,
+                )
+
+            return
+
         except ValidationError as e:
             self.message_user(request, str(e), level="ERROR")
-            return None
+            raise  
