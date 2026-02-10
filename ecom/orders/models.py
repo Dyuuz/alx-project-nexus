@@ -1,8 +1,10 @@
 import uuid
 from decimal import Decimal
+from django.db import transaction
 from django.db import models
 from accounts.models import CustomUser
 from cart.models import Cart
+from products.models import Product
 
 
 class Order(models.Model):
@@ -22,6 +24,9 @@ class Order(models.Model):
     shipping_address = models.TextField()
     billing_address = models.TextField()
     payment_method = models.CharField(max_length=50)
+    
+    payment_reminder_sent = models.BooleanField(default=False)
+    final_payment_reminder_sent = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -31,10 +36,41 @@ class Order(models.Model):
             models.Index(fields=["status"]),
             models.Index(fields=["created_at"]),
         ]
+        
+    def __str__(self):
+        return f"Order - {self.customer.email}"
 
     @property
     def total_amount(self) -> Decimal:
         return sum((item.line_total for item in self.items.all()), Decimal("0.00"))
+    
+    @transaction.atomic
+    def cancel(self, reason: str):
+        """
+        Cancel an unpaid order and restore reserved stock.
+
+        This operation is idempotent:
+        - Calling it multiple times is safe
+        - Paid or already-cancelled orders are ignored
+        """
+
+        # Only awaiting payment orders can be cancelled safely
+        if self.status != "awaiting_payment":
+            return
+
+        # Restore stock for each order item
+        for item in self.items.select_for_update():
+            Product.objects.filter(id=item.product_id).update(
+                stock=models.F("stock") + item.quantity
+            )
+        
+        # Expire the cart (order-bound cart should never be reused)
+        self.cart.status = "expired"
+        self.cart.save(update_fields=["status"])
+
+        # Transition order state
+        self.status = "cancelled"
+        self.save(update_fields=["status"])
 
 
 class OrderItem(models.Model):
@@ -61,3 +97,6 @@ class OrderItem(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["order", "product_id"], name="unique_product_per_order"),
         ]
+    
+    def __str__(self):
+        return f"OrderItem - {self.order.customer.email}"
