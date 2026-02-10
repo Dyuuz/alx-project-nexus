@@ -11,8 +11,37 @@ from cart.models import Checkout
 from products.models import Product
 from orders.models import Order, OrderItem
 
+from datetime import timedelta
+from django.utils import timezone
+from django.conf import settings
+from django.db import OperationalError
+from redis.exceptions import ConnectionError as RedisConnectionError
+from kombu.exceptions import OperationalError as KombuOperationalError
+from core.utils.mail_sender import send_mail_helper
+from orders.models import Order
+from asgiref.sync import async_to_sync
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 class OrderService:
+    """
+    Service layer responsible for managing order operations.
+    """
+    
+    @staticmethod
+    @transaction.atomic
+    def cancel_order(order, reason: str):
+        """
+        
+        """
+        if order.status != "awaiting_payment":
+            return
+
+        order.cancel(reason=reason)
+        return True
+    
     @staticmethod
     def create_order_with_cart_recovery(cart):
         """
@@ -46,6 +75,8 @@ class OrderService:
         Snapshots product and pricing data into order items and reduces stock.
         Ensures idempotency by returning an existing order if one already exists.
         """
+        from core.tasks import send_vendor_low_stock_alerts_task
+        
         if cart.status != "pending":
             raise ValidationError("Checkout must be confirmed before an order can be created.")
 
@@ -62,16 +93,29 @@ class OrderService:
         # Lock cart items rows for consistent read
         cart_items = CartItem.objects.select_for_update().filter(cart=cart).select_related("product")
         
-        for item in cart_items:
-            product: Product = item.product
+        low_stock_product_ids = []
 
-            if hasattr(product, "stock"):
-                if item.item_quantity > product.stock:
-                    print("err")
-                    raise ValidationError(f"Insufficient stock for {getattr(product, 'name', 'product')}.")
-                
+        for item in cart_items:
+            product = item.product
+
+            if item.item_quantity > product.stock:
+                raise ValidationError(
+                    f"Insufficient stock for {product.name}"
+                )
+
+            previous_stock = product.stock
             product.stock -= item.item_quantity
             product.save(update_fields=["stock"])
+
+            if (
+                previous_stock > product.low_stock_threshold
+                and product.stock <= product.low_stock_threshold
+                and not product.low_stock_alert_sent
+            ):
+                low_stock_product_ids.append(product.id)
+
+        if low_stock_product_ids:
+            send_vendor_low_stock_alerts_task.delay(low_stock_product_ids)
         
         order = Order.objects.create(
             customer=cart.customer,
@@ -125,3 +169,49 @@ class OrderService:
 
         return order
 
+    @staticmethod
+    def cancel_unpaid_orders(self):
+        """
+        Cancels orders stuck in `awaiting_payment` beyond the configured payment TTL.
+
+        Orders older than `ORDER_PAYMENT_TTL_HOURS` are cancelled via
+        `OrderService.cancel_order` to enforce proper state transitions
+        and side effects.
+
+        Transient infrastructure errors trigger a retry.
+        Logic errors fail fast without retry.
+        """
+        try:
+            ORDER_PAYMENT_TTL_HOURS = settings.ORDER_PAYMENT_TTL_HOURS
+            expiry_time = timezone.now() - timedelta(hours=ORDER_PAYMENT_TTL_HOURS)
+
+            orders = Order.objects.filter(
+                status="awaiting_payment",
+                created_at__lt=expiry_time,
+            )
+
+            if orders:
+                logger.info("Found %s orders to invalidate", orders.count())
+                count = 0
+                
+                for order in orders.iterator():
+                    if OrderService.cancel_order(order, reason="Payment TTL exceeded"):
+                        count+=1
+                    
+                logger.info(f"Orders Invalidation Completed for {count} users")
+
+        except (OperationalError, RedisConnectionError, KombuOperationalError) as exc:
+            # Transient infra issue → retry
+            logger.error(
+                "Transient failure in cancel_unpaid_orders",
+                exc_info=True,
+            )
+            raise self.retry(exc=exc, countdown=45)
+
+        except Exception:
+            # Programming / logic error → fail once, loudly
+            logger.critical(
+                "Fatal error in cancel_unpaid_orders - not retrying",
+                exc_info=True,
+            )
+            raise
