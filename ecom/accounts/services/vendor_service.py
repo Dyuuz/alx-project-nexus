@@ -1,5 +1,12 @@
 from django.db import transaction
 from accounts.models import Vendor, CustomUser
+from products.models import Product
+from collections import defaultdict
+from asgiref.sync import async_to_sync
+from core.utils.mail_sender import send_mail_helper
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @transaction.atomic
@@ -57,3 +64,51 @@ def delete_vendor(vendor: Vendor):
         None
     """
     vendor.delete()
+
+
+@transaction.atomic
+def send_vendor_low_stock_alerts(self, product_ids):
+    """
+    Sends one low-stock email per vendor, batching all affected products.
+    """
+    try:
+        products = (
+            Product.objects
+            .select_related("vendor")
+            .filter(
+                id__in=product_ids,
+                low_stock_alert_sent=False,
+            )
+        )
+
+        products_by_vendor = defaultdict(list)
+
+        for product in products:
+            products_by_vendor[product.vendor].append(product)
+
+        for vendor, vendor_products in products_by_vendor.items():
+            if not vendor.email:
+                continue
+
+            lines = []
+            for product in vendor_products:
+                lines.append(
+                    f"- {product.name}: {product.stock} left "
+                    f"(threshold {product.low_stock_threshold})"
+                )
+
+            message = (
+                "The following products are running low on stock:\n\n"
+                + "\n".join(lines)
+                + "\n\nPlease restock to avoid selling out."
+            )
+
+            if async_to_sync(send_mail_helper)():
+                # Mark all products as alerted
+                Product.objects.filter(
+                    id__in=[p.id for p in vendor_products]
+                ).update(low_stock_alert_sent=True)
+
+    except Exception:
+        logger.exception("Failed to send vendor low stock alerts")
+        raise
