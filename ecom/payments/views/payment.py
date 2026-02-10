@@ -10,10 +10,9 @@ from payments.serializers.payment import (
     PaymentReadSerializer, PaymentInitiateSerializer, 
     PaymentConfirmSerializer
 )
-from payments.permissions import IsPaymentOwnerOrAdmin
+from core.permissions import IsPaymentOwnerOrAdmin, IsCustomer
 from payments.services.payment import PaymentService
 from orders.models import Order
-from orders.permissions import IsCustomer
 
 
 class PaymentViewSet(ModelViewSet):
@@ -29,6 +28,8 @@ class PaymentViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post"]
+    
+    list_message = "Payments history retrieved successfully."
 
     def get_queryset(self):
         """
@@ -50,7 +51,7 @@ class PaymentViewSet(ModelViewSet):
         - Payment initiation and confirmation are restricted to customers.
         """
         
-        if self.action in ["list", "retrieve"]:
+        if self.action in ["list"]:
             return [IsAuthenticated(), IsPaymentOwnerOrAdmin()]
         if self.action in ["initiate", "confirm"]:
             return [IsAuthenticated(), IsCustomer()]
