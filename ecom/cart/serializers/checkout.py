@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from cart.models import Checkout
-
+from cart.serializers.cart import CartSerializer
 
 class CheckoutSerializer(serializers.ModelSerializer):
     """
@@ -14,12 +14,13 @@ class CheckoutSerializer(serializers.ModelSerializer):
         model = Checkout
         fields = (
             "id",
+            "cart",
             "shipping_address",
             "billing_address",
             "payment_method",
             "created_at",
         )
-        read_only_fields = ("id", "created_at")
+        read_only_fields = ("id", "cart", "created_at")
 
     def validate(self, attrs):
         """
@@ -40,3 +41,20 @@ class ConfirmCheckoutSerializer(serializers.Serializer):
     Validates the cart ID required to confirm a checkout.
     """
     cart_id = serializers.UUIDField()
+    
+
+class CheckoutHistorySerializer(serializers.ModelSerializer):
+    """
+    Read-only serializer for checkout history.
+    """
+
+    cart = CartSerializer(read_only=True)
+
+    class Meta:
+        model = Checkout
+        fields = (
+            "id",
+            "created_at",
+            "updated_at",
+            "cart",
+        )
