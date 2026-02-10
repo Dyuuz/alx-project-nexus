@@ -16,23 +16,31 @@ class ProductAdmin(admin.ModelAdmin):
         "original_price",
         "discount_percent",
         "discount_amount",
+        "initial_stock",
         "stock",
-        "created_at"
+        "last_activity_at"
     )
     list_filter = ("vendor", "category")
     search_fields = ("name", "vendor__business_name")
+    readonly_fields = ("last_activity_at","initial_stock")
 
     def save_model(self, request, obj, form, change):
-        """
-        Force Django admin to use the ProductService
-        instead of calling obj.save() directly.
-        """
         data = form.cleaned_data
 
         if change:
-            update_product(obj.id, **data)
+            product = update_product(obj.id, **data)
         else:
-            create_product(**data)
+            product = create_product(**data)
+            obj.pk = product.pk 
+
+        obj.refresh_from_db()
 
     def delete_model(self, request, obj):
         delete_product(obj)
+        
+    def save_related(self, request, form, formsets, change):
+        """
+        Prevent Django admin from trying to re-save M2M relationships
+        when persistence is handled in the service layer.
+        """
+        pass
