@@ -49,22 +49,22 @@ class CartItemViewSet(ModelViewSet):
         return CartItem.objects.filter(cart=cart)
     
     
-    # def list(self, request, *args, **kwargs):
-    #     """
-    #     Return all items in the authenticated user's active cart.
-    #     """
-    #     queryset = self.get_queryset()
-    #     serializer = self.get_serializer(queryset, many=True)
+    def list(self, request, *args, **kwargs):
+        """
+        Return all items in the authenticated user's active cart.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
 
-    #     return Response(
-    #         {
-    #             "status": "success",
-    #             "code": "FETCH_SUCCESSFUL",
-    #             "message": "Active Cart items retrieved successfully.",
-    #             "data": serializer.data,
-    #         },
-    #         status=status.HTTP_200_OK,
-    #     )
+        return Response(
+            {
+                "status": "success",
+                "code": "FETCH_SUCCESSFUL",
+                "message": "Active Cart items retrieved successfully.",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
         
 
     def create(self, request, *args, **kwargs):
