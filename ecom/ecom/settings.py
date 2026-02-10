@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import dj_database_url
 from dotenv import load_dotenv
 import cloudinary
 import environ
@@ -95,6 +96,8 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardResultsPagination",
+    "PAGE_SIZE": 10,
 }
 
 SIMPLE_JWT = {
@@ -145,6 +148,14 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     "default": dj_database_url.config(
+#         default=os.getenv("DATABASE_URL"),
+#         conn_max_age=600,
+#         ssl_require=not DEBUG,  # production-safe
+#     )
+# }
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -161,6 +172,7 @@ CACHES = {
 CELERY_BROKER_POOL_LIMIT = 1
 CELERY_REDIS_MAX_CONNECTIONS = 2
 CELERY_RESULT_BACKEND = None  
+CELERYD_HIJACK_ROOT_LOGGER = False
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -183,25 +195,42 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} {process:d} {name}: {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "level": "INFO",
+        },
+        "error_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "errors.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "level": "ERROR",   # 🔑 ONLY ERRORS
+            "encoding": "utf-8",
         },
     },
     "root": {
-        "handlers": ["console"],
-        "level": "INFO",
+        "handlers": ["console", "error_file"],
+        "level": "INFO",  # allow INFO to console
     },
     "loggers": {
-        "celery": {
-            "handlers": ["console"],
+        "django": {
+            "handlers": ["console", "error_file"],
             "level": "INFO",
             "propagate": False,
         },
-        "core": {  # core app
-            "handlers": ["console"],
+        "celery": {
+            "handlers": ["console", "error_file"],
             "level": "INFO",
-            "propagate": True,
+            "propagate": False,
         },
     },
 }
@@ -226,9 +255,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 STATIC_URL = 'static/'
 
-CART_TTL_MINUTES = 30
+CART_TTL_HOURS = int(os.getenv("CART_TTL_HOURS"))
+CHECKOUT_TTL_HOURS = int(os.getenv("CHECKOUT_TTL_HOURS"))
+ORDER_PAYMENT_TTL_HOURS = int(os.getenv("ORDER_PAYMENT_TTL_HOURS"))
+PAYMENT_REMINDER_24H_TTL_HOURS = int(os.getenv("PAYMENT_REMINDER_24H_TTL_HOURS"))
+FINAL_PAYMENT_REMINDER_TTL_HOURS_START = int(os.getenv("FINAL_PAYMENT_REMINDER_TTL_HOURS_START"))
+FINAL_PAYMENT_REMINDER_TTL_HOURS_END = int(os.getenv("FINAL_PAYMENT_REMINDER_TTL_HOURS_END"))
+CRITICAL_INACTIVITY_HOURS = int(os.getenv("CRITICAL_INACTIVITY_HOURS"))
 
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 DJANGO_API_URL = os.getenv("DJANGO_API_URL")
+MAIL_API_URL = os.getenv("MAIL_API_URL")
