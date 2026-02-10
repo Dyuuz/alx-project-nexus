@@ -12,28 +12,34 @@ from products.services.products import (
     update_product,
     delete_product,
 )
-from products.permissions import IsProductOwnerOrAdmin, IsAdmin
+from core.permissions import (
+    IsProductOwnerOrAdmin, IsAdmin, IsVendor, IsCustomer
+)
 
 class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post", "patch", "delete"]
     
+    # default list message
+    list_message = "Products retrieved successfully."
+
     def get_queryset(self):
         user = self.request.user
 
-        if user.role == "admin":
-            return Product.objects.all()
-
-        if user.role == "vendor" and hasattr(user, "vendor_profile"):
+        # Vendors only see their own products
+        if user.is_authenticated and user.role == "vendor" and hasattr(user, "vendor_profile"):
             return Product.objects.filter(vendor=user.vendor_profile)
-        
-        raise PermissionDenied("You do not have permission to view products.")
-        # return Product.objects.none()
+
+        # Customers + admins see all products
+        return Product.objects.all()
 
     def get_permissions(self):
         if self.action == "create":
-            return [IsAuthenticated()]
+            return [IsAuthenticated(), IsVendor()]
+        
+        if self.action == "list":
+            return [AllowAny()]
 
         if self.action in ["update", "partial_update"]:
             return [IsAuthenticated(), IsProductOwnerOrAdmin()]
