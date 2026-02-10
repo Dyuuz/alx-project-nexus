@@ -6,6 +6,18 @@ from cart.models import Checkout
 from cart.models import Cart
 from cart.services.cart_guards import assert_cart_is_modifiable
 
+from datetime import timedelta
+from django.conf import settings
+from django.utils import timezone
+from cart.models import Checkout
+from cart.services.cart import CartService
+from django.db import OperationalError
+from redis.exceptions import ConnectionError as RedisConnectionError
+from kombu.exceptions import OperationalError as KombuOperationalError
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 class CheckoutService:
     """
@@ -103,3 +115,49 @@ class CheckoutService:
         cart.save(update_fields=["status"])
 
         return checkout
+
+    @staticmethod
+    def expire_pending_checkouts(self):
+        """
+        Expires pending checkouts that exceed the configured TTL.
+
+        Identifies inactive checkouts and expires their carts
+        via the CartService to enforce proper lifecycle rules.
+        """
+        try:
+            CHECKOUT_TTL_HOURS = settings.CHECKOUT_TTL_HOURS
+            expiry_time = timezone.now() - timedelta(hours=CHECKOUT_TTL_HOURS)
+
+            checkouts = Checkout.objects.filter(
+                cart__status="pending",
+                created_at__lt=expiry_time,
+            )
+            
+            if checkouts:
+                logger.info("Found %s checkouts to invalidate", checkouts.count())
+                count = 0
+                
+                for checkout in checkouts.iterator():
+                    if CartService.expire_cart(
+                        checkout.cart,
+                        reason="Checkout inactive beyond TTL",
+                    ):
+                        count+=1
+                    
+                logger.info(f"Carts Invalidation Completed for {count} users")
+
+        except (OperationalError, RedisConnectionError, KombuOperationalError) as exc:
+            # transient infra failure → retry
+            logger.error(
+                "Transient failure in expire_pending_checkouts",
+                exc_info=True,
+            )
+            raise self.retry(exc=exc, countdown=45)
+
+        except Exception:
+            # programming / logic error → fail once, loudly
+            logger.critical(
+                "Fatal error in expire_pending_checkouts - not retrying",
+                exc_info=True,
+            )
+            raise
