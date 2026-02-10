@@ -102,7 +102,7 @@ class CartItemService:
     @staticmethod
     def record_cart_activity(cart):
         """
-        
+        Updates the cart's last activity timestamp.
         """
         cart.last_activity_at = timezone.now()
         cart.save(update_fields=["last_activity_at"])

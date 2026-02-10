@@ -16,13 +16,15 @@ logger = logging.getLogger(__name__)
 
 class CartService:
     """
-    Service layer responsible for managing cart operations.
+    Service layer responsible for managing cart lifecycle operations.
     """
     @staticmethod
     @transaction.atomic
     def expire_cart(cart, reason: str):
         """
-        
+        Expires a cart unless it is already paid or expired.
+
+        Marks the cart as invalid with the provided reason.
         """
         if cart.status in ("paid", "expired"):
             return
@@ -33,6 +35,11 @@ class CartService:
     @staticmethod
     @transaction.atomic
     def get_or_create_cart(user):
+        """
+        Returns an active cart for the user or creates a new one.
+
+        Reuses recent unpaid or pending carts within the configured TTL.
+        """
         CART_TTL_HOURS = settings.CART_TTL_HOURS
         expiry_time = timezone.now() - timedelta(hours=CART_TTL_HOURS)
 
@@ -59,6 +66,11 @@ class CartService:
         
     @staticmethod
     def cleanup_abandoned_carts(self):
+        """
+        Expires carts that have been inactive beyond the configured TTL.
+
+        Designed to run periodically and safely invalidate abandoned carts.
+        """
         try:
             CART_TTL_HOURS = settings.CART_TTL_HOURS
             expiry_time = timezone.now() - timedelta(hours=CART_TTL_HOURS)
