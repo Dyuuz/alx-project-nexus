@@ -19,7 +19,7 @@ from accounts.services.user_service import (
     update_user,
     delete_user,
 )
-from accounts.permissions import IsAdmin, IsAdminOrSelf
+from core.permissions import IsAdmin, IsAdminOrSelf
 
 User = get_user_model()
 
@@ -45,7 +45,7 @@ class UserViewSet(ModelViewSet):
         if self.action == "create":
             return [AllowAny()]
 
-        if self.action in ["retrieve", "update", "partial_update"]:
+        if self.action in ["list", "update", "partial_update"]:
             return [IsAuthenticated(), IsAdminOrSelf()]
 
         if self.action == "list":
@@ -57,26 +57,26 @@ class UserViewSet(ModelViewSet):
         return [IsAuthenticated()]
 
     def list(self, request, *args, **kwargs):
-        bank_account = self.get_queryset().first()
+        user = self.get_queryset().first()
 
-        if not bank_account:
+        if not user:
             return Response(
                 {
                     "status": "success",
                     "code": "NO_DATA_FETCHED",
-                    "message": "No existing bank account.",
+                    "message": "No existing user found.",
                     "data": None
                 },
                 status=status.HTTP_200_OK
             )
 
-        serializer = self.get_serializer(bank_account)
+        serializer = self.get_serializer(user)
 
         return Response(
             {
                 "status": "success",
                 "code": "FETCH_SUCCESSFUL",
-                "message": "Bank account retrieved successfully.",
+                "message": "User retrieved successfully.",
                 "data": serializer.data
             },
             status=status.HTTP_200_OK

@@ -15,7 +15,7 @@ from accounts.services.vendor_service import (
     update_vendor,
     delete_vendor,
 )
-from accounts.permissions import IsAdminOrSelf, IsAdmin
+from core.permissions import IsAdminOrSelf, IsAdmin
 
 
 class VendorViewSet(ModelViewSet):
@@ -76,7 +76,7 @@ class VendorViewSet(ModelViewSet):
         if self.action == "create":
             return [IsAuthenticated()]
 
-        if self.action in ["retrieve", "update", "partial_update"]:
+        if self.action in ["list", "update", "partial_update"]:
             return [IsAuthenticated(), IsAdminOrSelf()]
 
         if self.action == "list":

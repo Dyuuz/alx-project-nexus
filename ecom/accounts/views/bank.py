@@ -16,7 +16,7 @@ from accounts.services.bank_service import (
     update_bank_account,
     delete_bank_account,
 )
-from accounts.permissions import (
+from core.permissions import (
     IsBankAccountOwner, IsAdmin
 )
 
@@ -69,7 +69,7 @@ class BankAccountViewSet(ModelViewSet):
         if self.action == "create":
             return [IsAuthenticated()]
 
-        if self.action in ["retrieve", "update", "partial_update"]:
+        if self.action in ["list", "update", "partial_update"]:
             return [IsAuthenticated(), IsBankAccountOwner()]
 
         if self.action == "list":
