@@ -9,9 +9,12 @@ from django.shortcuts import get_object_or_404
 from cart.services.cartItem import CartItemService
 from cart.services.cart import CartService
 from cart.models import Checkout, Cart
-from cart.serializers.checkout import CheckoutSerializer, ConfirmCheckoutSerializer
+from cart.serializers.checkout import (
+    CheckoutSerializer, ConfirmCheckoutSerializer,
+    CheckoutHistorySerializer
+)
 from cart.services.checkout import CheckoutService
-from cart.permissions import IsCustomer
+from core.permissions import IsCustomer
 
 
 class CheckoutViewSet(ModelViewSet):
@@ -35,7 +38,11 @@ class CheckoutViewSet(ModelViewSet):
     serializer_class = CheckoutSerializer
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "patch", "post"]
-
+    
+    # action-specific messages
+    action_messages = {
+        "history": "Checkout history retrieved successfully.",
+    }
 
     def get_queryset(self):
         """
@@ -69,21 +76,62 @@ class CheckoutViewSet(ModelViewSet):
 
         Guarantees that a checkout draft exists for the active cart.
         """
-        cart = CartService.get_or_create_cart(request.user)
-        checkout = CheckoutService.get_or_create_draft(cart)
+        try:
+            cart = CartService.get_or_create_cart(request.user)
+            checkout = CheckoutService.get_or_create_draft(cart)
 
-        serializer = self.get_serializer(checkout)
+            serializer = self.get_serializer(checkout)
+
+            return Response(
+                {
+                    "status": "success",
+                    "code": "FETCH_SUCCESSFUL",
+                    "message": "Checkout retrieved successfully.",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        
+        except Exception as e:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_CREDENTIALS",
+                    
+                    "detail": f"{e}"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=["get"], url_path="history")
+    def history(self, request):
+        """
+        
+        """
+        checkouts = (
+            Checkout.objects
+            .filter(cart__customer=request.user)
+            .select_related("cart")
+            .prefetch_related("cart__items__product")
+            .order_by("-created_at")
+        )
+        
+        page = self.paginate_queryset(checkouts)
+        if page is not None:
+            serializer = CheckoutHistorySerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = CheckoutHistorySerializer(checkouts, many=True)
 
         return Response(
             {
                 "status": "success",
                 "code": "FETCH_SUCCESSFUL",
-                "message": "Checkout retrieved successfully.",
+                "message": "Checkout history retrieved successfully.",
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
         )
-
 
     @action(detail=False, methods=["patch"], url_path="update")
     def update_draft(self, request):

@@ -8,7 +8,7 @@ from cart.models import CartItem
 from cart.serializers import cart, cartItem
 from cart.services.cartItem import CartItemService
 from cart.services.cart import CartService
-from cart.permissions import IsCustomer
+from core.permissions import IsCustomer
 
 
 class CartItemViewSet(ModelViewSet):
@@ -27,7 +27,7 @@ class CartItemViewSet(ModelViewSet):
     queryset = CartItem.objects.all()
     renderer_classes = [JSONRenderer]
     permission_classes = [IsAuthenticated, IsCustomer]
-    http_method_names = ["post", "patch", "delete"]
+    http_method_names = ["get", "post", "patch", "delete"]
 
 
     def get_serializer_class(self):
@@ -47,7 +47,25 @@ class CartItemViewSet(ModelViewSet):
         """
         cart = CartService.get_or_create_cart(self.request.user)
         return CartItem.objects.filter(cart=cart)
+    
+    
+    # def list(self, request, *args, **kwargs):
+    #     """
+    #     Return all items in the authenticated user's active cart.
+    #     """
+    #     queryset = self.get_queryset()
+    #     serializer = self.get_serializer(queryset, many=True)
 
+    #     return Response(
+    #         {
+    #             "status": "success",
+    #             "code": "FETCH_SUCCESSFUL",
+    #             "message": "Active Cart items retrieved successfully.",
+    #             "data": serializer.data,
+    #         },
+    #         status=status.HTTP_200_OK,
+    #     )
+        
 
     def create(self, request, *args, **kwargs):
         """
