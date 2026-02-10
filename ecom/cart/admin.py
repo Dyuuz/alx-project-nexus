@@ -129,6 +129,12 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(Checkout)
 class CheckoutAdmin(admin.ModelAdmin):
+    """
+    Admin interface for managing checkouts.
+
+    Enforces checkout business rules by delegating all mutations
+    to the CheckoutService instead of saving directly.
+    """
     list_display = [field.name for field in Checkout._meta.fields]
     readonly_fields = ("cart",)
     form = CheckoutAdminForm
@@ -155,9 +161,21 @@ class CheckoutAdmin(admin.ModelAdmin):
 
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
+    """
+    Updates checkout data via the CheckoutService.
+
+    Prevents direct model saves from bypassing validation
+    and lifecycle rules.
+    """
     list_display = ("id", "cart", "product", "item_quantity")
 
     def save_model(self, request, obj, form, change):
+        """
+        Creates or updates cart items through the CartItemService.
+
+        Prevents direct writes and blocks modifications
+        when the cart is no longer editable.
+        """
         try:
             assert_cart_is_modifiable(obj.cart)
 
