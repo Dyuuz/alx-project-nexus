@@ -47,7 +47,7 @@ class CartViewSet(ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=False, methods=["get"], url_path="history")
+    @action(detail=False, methods=["get"], url_path="history", permission_classes=[IsCustomer])
     def history(self, request):
         """
         

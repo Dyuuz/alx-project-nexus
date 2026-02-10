@@ -103,10 +103,10 @@ class CheckoutViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(detail=False, methods=["get"], url_path="history")
+    @action(detail=False, methods=["get"], url_path="history", permission_classes=[IsCustomer])
     def history(self, request):
         """
-        
+        Returns the authenticated customer's checkout history.
         """
         checkouts = (
             Checkout.objects
