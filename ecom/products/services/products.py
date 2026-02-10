@@ -16,6 +16,13 @@ logger = logging.getLogger(__name__)
 
 @transaction.atomic
 def create_product(**data):
+    """
+    Creates a new product and initializes stock and pricing.
+
+    Sets `initial_stock` from the provided stock value and
+    applies pricing rules before persisting the product.
+    """
+
     stock = data.get("stock", 0)
 
     product = Product(
@@ -30,6 +37,12 @@ def create_product(**data):
 
 @transaction.atomic
 def update_product(product_id, **data):
+    """
+    Updates a product while enforcing stock and pricing rules.
+
+    Stock changes are handled explicitly to keep `initial_stock`,
+    alerts, and inventory state consistent.
+    """
     data.pop("vendor", None)
 
     product = Product.objects.select_for_update().get(id=product_id)
@@ -63,10 +76,17 @@ def update_product(product_id, **data):
 
 @transaction.atomic
 def delete_product(product):
+    """
+    Deletes a product instance.
+    """
     product.delete()
 
 
 def _apply_pricing(product):
+    """
+    Computes and applies the product discount amount
+    based on the current pricing configuration.
+    """
     if product.discount_percent:
         product.discount_amount = (
             product.original_price * product.discount_percent / 100
@@ -77,7 +97,10 @@ def _apply_pricing(product):
 
 def should_send_critical_stock_alert(self):
     """
-    
+    Determines whether a critical stock alert should be sent.
+
+    An alert is triggered when stock falls below the threshold
+    and the product has remained inactive beyond the configured window.
     """
     CRITICAL_INACTIVITY_HOURS = settings.CRITICAL_INACTIVITY_HOURS
     if self.stock > self.low_stock_threshold:
