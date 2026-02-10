@@ -42,6 +42,9 @@ class Order(models.Model):
 
     @property
     def total_amount(self) -> Decimal:
+        """
+        Returns the total monetary value of all items in the cart.
+        """
         return sum((item.line_total for item in self.items.all()), Decimal("0.00"))
     
     @transaction.atomic
