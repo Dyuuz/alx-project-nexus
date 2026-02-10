@@ -38,3 +38,6 @@ httpx
 # Cloudinary (media storage)
 cloudinary==1.42.2
 django-cloudinary-storage==0.3.0
+
+dj-database-url==3.1.0
+psycopg2-binary==2.9.11
