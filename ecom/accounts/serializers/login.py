@@ -31,3 +31,10 @@ class LoginSerializer(serializers.Serializer):
         if not any(char.isdigit() for char in value):
             raise serializers.ValidationError("Password must contain at least one digit.")
         return value
+
+
+class LoginResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    code = serializers.CharField()
+    message = serializers.CharField()
+    data = serializers.DictField()
