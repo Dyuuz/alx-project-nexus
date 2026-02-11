@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'cloudinary',
     'cloudinary_storage',
+    'drf_spectacular',
     
     # apps
     'accounts',
