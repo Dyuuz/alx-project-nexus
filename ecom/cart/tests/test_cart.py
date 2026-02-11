@@ -15,7 +15,7 @@ def test_user_can_create_cart(api_client, normal_user):
     
     api_client.force_authenticate(user=normal_user)
 
-    url = reverse("cart")
+    url = reverse("cart-list")
     response = api_client.get(url)
 
     assert response.status_code == status.HTTP_200_OK
