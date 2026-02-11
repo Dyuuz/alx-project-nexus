@@ -94,6 +94,7 @@ if not DEBUG:
 
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
 
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -121,6 +122,38 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardResultsPagination",
     "PAGE_SIZE": 10,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Accounts
+        "login": "5/min",
+        "register": "3/min",
+        "email_verify": "10/min",
+        
+        # Authenticated user actions
+        "user_update": "20/min",
+        "user_read": "60/min",
+        
+        # Bank
+        "bank_create": "3/min",
+        "bank_update": "5/min",
+        "bank_read": "30/min",
+        "bank_delete": "10/min",
+        
+        # Vendor
+        "vendor_create": "5/min",
+        "vendor_update": "20/min",
+        "vendor_read": "60/min",
+        "vendor_delete": "10/min",
+        
+        # Carts
+        "cart_read": "150/min",
+        "cart_history": "50/min",
+        
+        # Cart Items
+        
+    },
 }
 
 SIMPLE_JWT = {
