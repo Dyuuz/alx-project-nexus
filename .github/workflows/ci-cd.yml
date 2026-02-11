@@ -31,6 +31,9 @@ jobs:
         CSRF_TRUSTED_ORIGINS:  ${{ secrets.CSRF_TRUSTED_ORIGINS }}
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         REDIS_URL:  ${{ secrets.REDIS_URL }}
+        CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+        CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+        CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
         EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
         CART_TTL_HOURS: 30
         CHECKOUT_TTL_HOURS: 30
