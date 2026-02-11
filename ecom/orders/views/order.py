@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.renderers import JSONRenderer
 from django.shortcuts import get_object_or_404
+from rest_framework.throttling import ScopedRateThrottle
 
 from cart.services.cart import CartService
 from orders.models import Order
@@ -31,6 +32,7 @@ class OrderViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post"]
+    throttle_classes = [ScopedRateThrottle]
     
     list_message = "Order history retrieved successfully."
 
@@ -60,6 +62,18 @@ class OrderViewSet(ModelViewSet):
         if self.action in ["create_from_checkout"]:
             return [IsAuthenticated(), IsCustomer()]
         return [IsAuthenticated()]
+    
+    def get_throttles(self):
+        """ 
+        
+        """
+        if self.action in ["list", "retrieve"]:
+            self.throttle_scope = "order_read"
+
+        elif self.action == "create_from_checkout":
+            self.throttle_scope = "order_create"
+
+        return super().get_throttles()
 
     def get_serializer_class(self):
         """

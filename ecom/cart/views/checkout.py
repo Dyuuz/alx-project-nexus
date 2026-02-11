@@ -7,6 +7,7 @@ from rest_framework.renderers import JSONRenderer
 from django.shortcuts import get_object_or_404
 
 from cart.services.cartItem import CartItemService
+from rest_framework.throttling import ScopedRateThrottle
 from cart.services.cart import CartService
 from cart.models import Checkout, Cart
 from cart.serializers.checkout import (
@@ -38,6 +39,7 @@ class CheckoutViewSet(ModelViewSet):
     serializer_class = CheckoutSerializer
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "patch", "post"]
+    throttle_classes = [ScopedRateThrottle]
     
     # action-specific messages
     action_messages = {
@@ -58,7 +60,21 @@ class CheckoutViewSet(ModelViewSet):
 
         cart = CartService.get_or_create_cart(user)
         return Checkout.objects.filter(cart=cart)
+    
+    def get_throttles(self):
+        if self.action == "list":
+            self.throttle_scope = "checkout_read"
 
+        elif self.action == "history":
+            self.throttle_scope = "checkout_history"
+
+        elif self.action == "update_draft":
+            self.throttle_scope = "checkout_update"
+
+        elif self.action == "confirm":
+            self.throttle_scope = "checkout_confirm"
+
+        return super().get_throttles()
 
     def get_permissions(self):
         """

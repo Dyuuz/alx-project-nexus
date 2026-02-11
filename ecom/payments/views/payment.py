@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.renderers import JSONRenderer
+from rest_framework.throttling import ScopedRateThrottle
 
 from payments.models import Payment
 from payments.serializers.payment import (
@@ -28,6 +29,7 @@ class PaymentViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post"]
+    throttle_classes = [ScopedRateThrottle]
     
     list_message = "Payments history retrieved successfully."
 
@@ -42,6 +44,20 @@ class PaymentViewSet(ModelViewSet):
         if getattr(user, "is_staff", False):
             return Payment.objects.all()
         return Payment.objects.filter(order__customer=user)
+    
+    
+    def get_throttles(self):
+        if self.action in ["list", "retrieve"]:
+            self.throttle_scope = "payment_read"
+
+        elif self.action == "initiate":
+            self.throttle_scope = "payment_initiate"
+
+        elif self.action == "confirm":
+            self.throttle_scope = "payment_confirm"
+
+        return super().get_throttles()
+
 
     def get_permissions(self):
         """

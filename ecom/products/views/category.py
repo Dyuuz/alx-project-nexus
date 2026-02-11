@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status
 from rest_framework.response import Response
-
+from rest_framework.throttling import ScopedRateThrottle
 from products.models import Category
 from products.serializers.category import CategorySerializer
 from products.services.category import (
@@ -18,6 +18,7 @@ class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post", "patch", "delete"]
+    throttle_classes = [ScopedRateThrottle]
     
     # default list message
     list_message = "Categories retrieved successfully."
@@ -25,6 +26,15 @@ class CategoryViewSet(ModelViewSet):
     def get_queryset(self):
         # Publicly readable categories
         return Category.objects.all()
+    
+    def get_throttles(self):
+        if self.action in ["list", "retrieve"]:
+            self.throttle_scope = "category_read"
+
+        elif self.action in ["create", "update", "partial_update", "destroy"]:
+            self.throttle_scope = "category_write"
+
+        return super().get_throttles()
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:

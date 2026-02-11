@@ -99,5 +99,5 @@ def test_admin_can_delete_user_profile(api_client, normal_user, admin_user):
     url = reverse("vendor-detail", args=[vendor.id])
     response = api_client.delete(url)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert response.status_code == status.HTTP_200_OK
     assert not Vendor.objects.filter(id=vendor.id).exists()

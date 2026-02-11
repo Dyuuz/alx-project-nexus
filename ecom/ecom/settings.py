@@ -152,7 +152,35 @@ REST_FRAMEWORK = {
         "cart_history": "50/min",
         
         # Cart Items
+        "cartitem_read": "120/min",
+        "cartitem_create": "40/min",
+        "cartitem_update": "60/min",
+        "cartitem_delete": "40/min",
         
+        # Checkout
+        "checkout_read": "60/min",
+        "checkout_history": "30/min",
+        "checkout_update": "20/min",
+        "checkout_confirm": "10/min",
+        
+        # Orders
+        "order_read": "60/min",
+        "order_create": "5/min",
+        
+        # Payments
+        "payment_read": "60/min",
+        "payment_initiate": "5/min",
+        "payment_confirm": "10/hour",
+        
+        # Categories
+        "category_read": "200/min",
+        "category_write": "20/min",
+        
+        # Products
+        "product_read": "300/min",
+        "product_create": "30/min",
+        "product_update": "40/min",
+        "product_delete": "10/min",
     },
 }
 

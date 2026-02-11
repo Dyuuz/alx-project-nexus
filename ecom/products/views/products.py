@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 
 from products.models import Product
 from rest_framework.exceptions import PermissionDenied
@@ -20,6 +21,7 @@ class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post", "patch", "delete"]
+    throttle_classes = [ScopedRateThrottle]
     
     # default list message
     list_message = "Products retrieved successfully."
@@ -33,6 +35,21 @@ class ProductViewSet(ModelViewSet):
 
         # Customers + admins see all products
         return Product.objects.all()
+    
+    def get_throttles(self):
+        if self.action in ["list", "retrieve"]:
+            self.throttle_scope = "product_read"
+
+        elif self.action == "create":
+            self.throttle_scope = "product_create"
+
+        elif self.action in ["update", "partial_update"]:
+            self.throttle_scope = "product_update"
+
+        elif self.action == "destroy":
+            self.throttle_scope = "product_delete"
+
+        return super().get_throttles()
 
     def get_permissions(self):
         if self.action == "create":

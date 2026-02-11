@@ -2,6 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework import status
 
 from cart.models import CartItem
@@ -28,7 +29,7 @@ class CartItemViewSet(ModelViewSet):
     renderer_classes = [JSONRenderer]
     permission_classes = [IsAuthenticated, IsCustomer]
     http_method_names = ["get", "post", "patch", "delete"]
-
+    throttle_classes = [ScopedRateThrottle]
 
     def get_serializer_class(self):
         """
@@ -39,7 +40,21 @@ class CartItemViewSet(ModelViewSet):
         if self.action in ["update", "partial_update"]:
             return cartItem.CartItemUpdateSerializer
         return cartItem.CartItemSerializer
+    
+    def get_throttles(self):
+        if self.action == "list":
+            self.throttle_scope = "cartitem_read"
 
+        elif self.action == "create":
+            self.throttle_scope = "cartitem_create"
+
+        elif self.action in ["update", "partial_update"]:
+            self.throttle_scope = "cartitem_update"
+
+        elif self.action == "destroy":
+            self.throttle_scope = "cartitem_delete"
+
+        return super().get_throttles()
 
     def get_queryset(self):
         """

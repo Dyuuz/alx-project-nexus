@@ -8,6 +8,7 @@ from cart.services.cart import CartService
 from core.permissions import IsCustomer
 from cart.models import Cart
 from cart.serializers.cart import CartSerializer
+from rest_framework.throttling import ScopedRateThrottle
 from core.pagination import StandardResultsPagination
 from rest_framework.decorators import action
 
@@ -22,11 +23,22 @@ class CartViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, IsCustomer]
     pagination_class = None
     http_method_names = ["get"]
+    throttle_classes = [ScopedRateThrottle]
     
     # action-specific messages
     action_messages = {
         "history": "Cart history retrieved successfully.",
     }
+    
+    def get_throttles(self):
+        if self.action == "list":
+            self.throttle_scope = "cart_read"
+
+        elif self.action == "history":
+            self.throttle_scope = "cart_history"
+
+        return super().get_throttles()
+
     
     def list(self, request):
         """
