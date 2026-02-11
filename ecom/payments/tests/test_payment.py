@@ -9,6 +9,9 @@ from cart.services.checkout import CheckoutService
 from orders.models import Order
 from payments.models import Payment
 
+from payments.models import Payment
+from payments.services.payment import PaymentService
+from unittest.mock import patch
 
 @pytest.mark.django_db
 def test_customer_can_initiate_payment(api_client, normal_user, product):
@@ -106,3 +109,5 @@ def test_confirm_payment_marks_order_paid(api_client, normal_user, product):
 
     assert order.status == "paid"
     assert cart.status == "paid"
+
+

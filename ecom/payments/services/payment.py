@@ -107,8 +107,9 @@ class PaymentService:
         # move order + cart to paid
         OrderService.mark_order_paid(payment.order)
         message = "Your payment is confirmed"
+        subject = "Payment Confirmed"
         
-        if async_to_sync(send_mail_helper)(message, payment.order.customer.email):
+        if async_to_sync(send_mail_helper)(subject, message, payment.order.customer.email):
             payment.payment_alert = True
             payment.save(update_fields=["payment_alert"])
             
@@ -121,43 +122,32 @@ class PaymentService:
         Sends payment confirmation emails for paid payments
         that have not yet received an alert.
         """
-        try:
-            payments = Payment.objects.filter(
-                status="paid",
-                payment_alert=False,
-            )
-
-            if payments:
-                logger.info("Found %s payments alert message to deliver.", payments.count())
-                count = 0
-                
-                for payment in payments.iterator():
-                    product_names = ", ".join(item.product.name for item in payment.order.cart.items)
-
-                    message = f"Your payment for '{product_names}' has been confirmed."
-                    email = payment.order.cart.customer.email
-                    
-                    if async_to_sync(send_mail_helper)(message, email):
-                        payment.payment_alert = True
-                        payment.save(update_fields=["payment_alert"])
-                        count+=1
-                
-                logger.info(f"Mail Successfully Delivered to - {count} users")
-
-        except (OperationalError, RedisConnectionError, KombuOperationalError) as exc:
-            logger.error(
-                "Transient failure in send_payment_alerts",
-                exc_info=True,
-            )
-            raise self.retry(exc=exc, countdown=45)
-
-        except Exception:
-            logger.critical(
-                "Fatal error in send_payment_alerts - not retrying",
-                exc_info=True,
-            )
-            raise
         
+        payments = Payment.objects.filter(
+            status="paid",
+            payment_alert=False,
+        )
+
+        if payments:
+            logger.info("Found %s payments alert message to deliver.", payments.count())
+            subject = "Payment Successful"
+            count = 0
+            
+            for payment in payments.iterator():
+                product_names = ", ".join(item.product.name for item in payment.order.cart.items)
+
+                message = f"Your payment for '{product_names}' has been confirmed."
+                email = payment.order.cart.customer.email
+                
+                if async_to_sync(send_mail_helper)(subject, message, email):
+                    payment.payment_alert = True
+                    payment.save(update_fields=["payment_alert"])
+                    count+=1
+            
+            logger.info(f"Mail Successfully Delivered to - {count} users")
+
+    
+    
     @staticmethod
     @transaction.atomic
     def send_payment_reminder_24h(self):
@@ -177,6 +167,7 @@ class PaymentService:
             
             if orders:
                 logger.info("Found %s orders to push mail reminders to - ", orders.count())
+                subject = "Pending Payment for your Order"
                 count = 0
                 
                 for order in orders.iterator():
@@ -185,7 +176,7 @@ class PaymentService:
                     message = f"Your payment for '{product_names}' is still pending. Your order will expire in 12hours."
                     email = order.customer.email
                     
-                    if async_to_sync(send_mail_helper)(message, email):
+                    if async_to_sync(send_mail_helper)(subject, message, email):
                         order.payment_reminder_sent = True
                         order.save(update_fields=["payment_reminder_sent"])
                         count+=1
@@ -228,10 +219,15 @@ class PaymentService:
             
             if orders:
                 logger.info("Found %s orders to push mail reminders to - ", orders.count())
+                subject = "Pending Payment for your Order - Expires in few hours"
                 count = 0
                 
                 for order in orders.iterator():
-                    if  async_to_sync(send_mail_helper)():
+                    product_names = ", ".join(item.product.name for item in order.cart.items)
+                    message = f"Your payment for '{product_names}' is still pending. Your order will expire in few hours."
+                    email = order.customer.email
+                    
+                    if  async_to_sync(send_mail_helper)(subject, message, email):
                         order.final_payment_reminder_sent = True
                         order.save(update_fields=["final_payment_reminder_sent"])
                         count+=1
