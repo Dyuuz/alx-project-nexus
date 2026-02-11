@@ -17,9 +17,7 @@ from django.conf import settings
 from django.db import OperationalError
 from redis.exceptions import ConnectionError as RedisConnectionError
 from kombu.exceptions import OperationalError as KombuOperationalError
-from core.utils.mail_sender import send_mail_helper
 from orders.models import Order
-from asgiref.sync import async_to_sync
 
 import logging
 logger = logging.getLogger(__name__)
