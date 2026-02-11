@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from products.models import Product
+from PIL import Image
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,6 +33,30 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def validate_name(self, value):
         return value.title().strip()
+    
+    def validate_image(self, image):
+        if not image:
+            raise serializers.ValidationError("Image is required.")
+
+        valid_formats = ['JPEG', 'JPG', 'PNG', 'WEBP']
+
+        try:
+            img = Image.open(image)
+            if img.format.upper() not in valid_formats:
+                raise serializers.ValidationError(
+                    "Image must be PNG, JPG, JPEG, or WEBP format."
+                )
+        except Exception:
+            raise serializers.ValidationError("Uploaded file is not a valid image.")
+
+        # Optional: size limit (e.g. 500kb)
+        max_size = 500 * 1024
+        if image.size > max_size:
+            raise serializers.ValidationError(
+                "Image size must be less than 500KB."
+            )
+
+        return image
 
     def validate(self, attrs):
         original_price = (
