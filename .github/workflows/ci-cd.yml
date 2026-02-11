@@ -51,7 +51,7 @@ jobs:
         run: pytest --reuse-db
 
   deploy:
-    needs: test   # 🔥 THIS IS IMPORTANT
+    needs: test  
     runs-on: ubuntu-latest
 
     steps:
