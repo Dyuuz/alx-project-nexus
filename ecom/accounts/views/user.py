@@ -1,4 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from rest_framework.renderers import JSONRenderer
@@ -7,6 +8,7 @@ from rest_framework.decorators import action
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema
 
 from accounts.serializers.login import LoginSerializer
 from accounts.serializers.user import (
@@ -130,10 +132,13 @@ class UserViewSet(ModelViewSet):
         )
 
 
-class LoginViewSet(viewsets.ViewSet):
+class LoginViewSet(GenericViewSet):
     permission_classes = [AllowAny]
     renderer_classes = [JSONRenderer]
 
+    @extend_schema(
+      responses={200: LoginResponseSerializer}
+    )
     def create(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
