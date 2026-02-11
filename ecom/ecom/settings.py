@@ -107,7 +107,7 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
 
-    CSRF_TRUSTED_ORIGINS = os.getenv("ALLOWED_HOSTS", "").split(",")
+    CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
 
 
 REST_FRAMEWORK = {

@@ -27,6 +27,7 @@ celery>=5.3
 
 # Redis message broker
 redis>=5.0
+django-redis>=5.4
 
 # Store Celery task results in Django
 django-celery-results>=2.5
