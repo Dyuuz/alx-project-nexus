@@ -47,4 +47,7 @@ psycopg2-binary==2.9.11
 # Swagger - API doc
 drf-spectacular
 
+# Static files
+whitenoise
+
 
