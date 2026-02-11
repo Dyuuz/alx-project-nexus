@@ -103,8 +103,9 @@ def send_vendor_low_stock_alerts(self, product_ids):
                 + "\n".join(lines)
                 + "\n\nPlease restock to avoid selling out."
             )
-
-            if async_to_sync(send_mail_helper)(message, email):
+            
+            subject = "Low Stock Alert"
+            if async_to_sync(send_mail_helper)(subject, message, email):
                 # Mark all products as alerted
                 Product.objects.filter(
                     id__in=[p.id for p in vendor_products]
