@@ -3,6 +3,7 @@ from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 from accounts.models import Vendor
 from products.models import Product, Category
+from core.factories import PaymentFactory
 
 User = get_user_model()
 
@@ -98,3 +99,11 @@ def product(category, product_vendor_user):
         stock=1,
         vendor=product_vendor_user.vendor_profile,
     )
+    
+@pytest.fixture
+def payment_factory():
+    return PaymentFactory
+
+@pytest.fixture
+def order_factory():
+    return PaymentFactory
