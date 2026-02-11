@@ -1,1 +1,0 @@
-from core.tasks.carts import cleanup_abandoned_carts 

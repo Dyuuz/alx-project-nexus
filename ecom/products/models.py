@@ -4,13 +4,14 @@ from django.utils.text import slugify
 from django.utils import timezone
 from django.db.models import F
 from django.core.validators import MinValueValidator, MaxValueValidator
+from cloudinary.models import CloudinaryField
 import uuid
 
 # Create your models here.
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200, unique=True, blank=False, null=False)
-    image = models.ImageField(upload_to='images/', blank=False, null=False)
+    image = CloudinaryField('image')
     slug = models.SlugField(max_length=50, unique=True, db_index=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True) 
@@ -41,7 +42,7 @@ class Product(models.Model):
     slug = models.SlugField(max_length=50, unique=True, db_index=True, blank=True,null=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products')
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='products')
-    image = models.ImageField(upload_to='images/', blank=True)
+    image = CloudinaryField('image')
     public_id = models.CharField(blank=True)
     srcURL = models.URLField(blank=True)
     name = models.CharField(max_length=200)
