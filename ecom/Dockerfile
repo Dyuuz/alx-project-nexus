@@ -25,6 +25,10 @@ RUN echo "CWD: $(pwd)" && \
     echo "Top-level:" && ls -lah && \
     echo "Find start.sh:" && find . -maxdepth 3 -name start.sh -print
 
+# Create logs directory for Django logging
+RUN mkdir -p /app/logs && \
+    chown -R celeryuser:celeryuser /app/logs
+
 # Make start.sh executable
 RUN chmod +x start.sh
 
