@@ -1,14 +1,16 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.contrib.auth import get_user_model
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from drf_spectacular.utils import extend_schema
+from core.utils.mail_sender import send_mail_helper
 
 from accounts.serializers.login import LoginSerializer, LoginResponseSerializer
 from accounts.serializers.user import (
@@ -22,6 +24,10 @@ from accounts.services.user_service import (
     delete_user,
 )
 from core.permissions import IsAdmin, IsAdminOrSelf
+from accounts.services.email_verification import EmailVerificationService
+from accounts.serializers.email_verification import EmailVerif_ResponseSerializer
+
+signer = TimestampSigner()
 
 User = get_user_model()
 
@@ -88,6 +94,10 @@ class UserViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = create_user(serializer.validated_data)
+        
+        token_message = EmailVerificationService.generate_email_token(user)
+        subject = "Email Verification Link"
+        send_mail_helper.delay(subject, token_message, user.email)
 
         read_serializer = UserReadSerializer(user)
 
@@ -96,7 +106,7 @@ class UserViewSet(ModelViewSet):
                 "status": "success",
                 "code": "REGISTRATION_SUCCESSFUL",
                 "message": "Registration successful.",
-                "data": read_serializer.data  # include user info
+                "data": read_serializer.data 
             },
             status=status.HTTP_201_CREATED
         )
@@ -183,3 +193,64 @@ class LoginViewSet(GenericViewSet):
             },
             status=status.HTTP_200_OK
         )
+
+
+class EmailVerificationViewSet(GenericViewSet):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    renderer_classes = [JSONRenderer]
+
+    @extend_schema(
+        description="Verify a user's email address using token",
+        responses={
+            200: EmailVerif_ResponseSerializer,
+            400: EmailVerif_ResponseSerializer,
+        },
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"verify-email/(?P<token>[^/]+)",
+    )
+    def verify_email(self, request, token=None):
+        try:
+            EmailVerificationService.verify_email_token(token)
+
+            return Response(
+                {
+                    "status": "success",
+                    "code": "EMAIL_VERIFIED",
+                    "message": "Email verified successfully."
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except SignatureExpired:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_TOKEN",
+                    "message": "Verification link has expired."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except BadSignature:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_TOKEN",
+                    "message": "Invalid verification link"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_TOKEN",
+                    "message": "Verification failed"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
