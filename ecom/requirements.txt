@@ -1,7 +1,7 @@
 # Core
 Django>=5.2,<6.0
 djangorestframework>=3.15
-djangorestframework-simplejwt==6.2.0
+djangorestframework-simplejwt==5.3.1
 
 # Authentication / Users
 django-phonenumber-field>=7.3
