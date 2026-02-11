@@ -46,28 +46,40 @@ def debug_task(self):
 
 # CELERY BEAT SCHEDULES
 app.conf.beat_schedule = {
-    # "Cancel-unpaid-order": {
-    #     "task": "core.tasks.cancel_unpaid_orders_task",
-    #     "schedule": timedelta(minutes=1),
-    # },
+    "Clean-abandoned-carts": {
+        "task": "core.tasks.cleanup_carts_task",
+        "schedule": timedelta(minutes=5),
+    },
+    "Expire-pending-checkouts": {
+        "task": "core.tasks.expire_pending_checkouts_task",
+        "schedule": timedelta(minutes=11),
+    },
     "Cancel-unpaid-order": {
         "task": "core.tasks.cancel_unpaid_orders_task",
-        "schedule": timedelta(minutes=1),
+        "schedule": timedelta(minutes=7),
+    },    
+    "Send-payments-alerts": {
+        "task": "core.tasks.send_payment_alerts_task",
+        "schedule": timedelta(minutes=14),
     },
-    # "Expire-pending-checkouts": {
-    #     "task": "core.tasks.expire_pending_checkouts_task",
-    #     "schedule": timedelta(minutes=1),
-    # },
-    # "Clean-abandoned-carts": {
-    #     "task": "core.tasks.cleanup_carts_task",
-    #     "schedule": timedelta(minutes=1),
-    # },
-    # "Send-payment-reminder-24hrs": {
-    #     "task": "core.tasks.send_payment_reminder_24htask",
-    #     "schedule": timedelta(minutes=1),
-    # },
-    # "Send-final-payment-reminder": {
-    #     "task": "core.tasks.send_final_payment_reminder_task",
-    #     "schedule": timedelta(minutes=1),
-    # },
+    "Send-payment-reminder-24hrs": {
+        "task": "core.tasks.send_payment_reminder_24h_task",
+        "schedule": timedelta(minutes=21),
+    },
+    "Send-final-payment-reminder": {
+        "task": "core.tasks.send_final_payment_reminder_task",
+        "schedule": timedelta(minutes=27),
+    },
+    "Send-vendor-low-stock-alerts": {
+        "task": "core.tasks.send_vendor_low_stock_alerts_task",
+        "schedule": timedelta(minutes=33),
+    },
+    "Send-critical-stock-alerts": {
+        "task": "core.tasks.send_critical_stock_alerts_task",
+        "schedule": timedelta(minutes=37),
+    },
+    "Reconcile-inventory-and-notify": {
+        "task": "core.tasks.reconcile_inventory_and_notify_task",
+        "schedule": crontab(hour=9, minute=0),
+    },
 }
