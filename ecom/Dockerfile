@@ -25,10 +25,6 @@ RUN echo "CWD: $(pwd)" && \
     echo "Top-level:" && ls -lah && \
     echo "Find start.sh:" && find . -maxdepth 3 -name start.sh -print
 
-# Create logs directory for Django logging
-RUN mkdir -p /app/logs && \
-    chown -R celeryuser:celeryuser /app/logs
-
 # Make start.sh executable
 RUN chmod +x start.sh
 
@@ -37,6 +33,10 @@ RUN useradd -m celeryuser
 
 # Make /app writable by celeryuser
 RUN chown -R celeryuser:celeryuser /app
+
+# Create logs directory and assign ownership
+RUN mkdir -p /app/logs && \
+    chown -R celeryuser:celeryuser /app/logs
 
 # Switch to non-root user
 USER celeryuser
