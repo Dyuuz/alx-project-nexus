@@ -8,7 +8,7 @@ from cart.services.cart import CartService
 from core.permissions import IsCustomer
 from cart.models import Cart
 from cart.serializers.cart import CartSerializer
-
+from core.pagination import StandardResultsPagination
 from rest_framework.decorators import action
 
 class CartViewSet(ModelViewSet):
@@ -20,6 +20,7 @@ class CartViewSet(ModelViewSet):
     """
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated, IsCustomer]
+    pagination_class = None
     http_method_names = ["get"]
     
     # action-specific messages
@@ -52,6 +53,7 @@ class CartViewSet(ModelViewSet):
         """
         
         """
+        self.pagination_class = StandardResultsPagination
         carts = (
             Cart.objects
             .filter(
