@@ -7,15 +7,15 @@ EMAIL_HOST_PASSWORD = settings.EMAIL_HOST_PASSWORD
 MAIL_API_URL = settings.MAIL_API_URL
 
 @shared_task
-async def send_mail_helper(message, mail_recipient):
+async def send_mail_helper(subject, message, mail_recipient):
     
     url = MAIL_API_URL
     
     html_message = f"{message}"
     
     payload = {
-        "SUBJECT": "New User Registration",
-        "MESSAGE": "Hello",
+        "SUBJECT": subject,
+        "MESSAGE": "",
         "SENDER_EMAIL": EMAIL_HOST_USER,
         "SENDER_PASSWORD": EMAIL_HOST_PASSWORD,
         "RECEIVER_EMAIL": mail_recipient,
