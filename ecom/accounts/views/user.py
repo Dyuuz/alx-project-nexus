@@ -11,6 +11,7 @@ from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from core.utils.mail_sender import send_mail_helper
+from rest_framework.throttling import ScopedRateThrottle
 
 from accounts.serializers.login import LoginSerializer, LoginResponseSerializer
 from accounts.serializers.user import (
@@ -35,12 +36,22 @@ class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post", "patch", "delete"]
+    throttle_classes = [ScopedRateThrottle]
     
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:
             return User.objects.all()
         return User.objects.filter(id=user.id)
+
+    def get_throttles(self):
+        if self.action == "create":
+            self.throttle_scope = "register"
+        elif self.action in ["update", "partial_update"]:
+            self.throttle_scope = "user_update"
+        elif self.action in ["list", "retrieve"]:
+            self.throttle_scope = "user_read"
+        return super().get_throttles()
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -146,6 +157,8 @@ class LoginViewSet(GenericViewSet):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
     renderer_classes = [JSONRenderer]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
 
     @extend_schema(
         responses={200: LoginResponseSerializer},
@@ -199,6 +212,8 @@ class EmailVerificationViewSet(GenericViewSet):
     authentication_classes = []
     permission_classes = [AllowAny]
     renderer_classes = [JSONRenderer]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "email_verify"
 
     @extend_schema(
         description="Verify a user's email address using token",

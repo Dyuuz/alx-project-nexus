@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.renderers import JSONRenderer
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework import status
 
 from accounts.models import Vendor
@@ -38,6 +39,7 @@ class VendorViewSet(ModelViewSet):
     serializer_class = VendorSerializer
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post", "patch", "delete"]
+    throttle_classes = [ScopedRateThrottle]
 
     def get_queryset(self):
         """
@@ -51,6 +53,21 @@ class VendorViewSet(ModelViewSet):
         if self.request.user.is_staff:
             return Vendor.objects.all()
         return Vendor.objects.filter(user=self.request.user)
+    
+    def get_throttles(self):
+        if self.action == "create":
+            self.throttle_scope = "vendor_create"
+
+        elif self.action in ["update", "partial_update"]:
+            self.throttle_scope = "vendor_update"
+
+        elif self.action == "destroy":
+            self.throttle_scope = "vendor_delete"
+
+        elif self.action in ["list", "retrieve"]:
+            self.throttle_scope = "vendor_read"
+
+        return super().get_throttles()
 
     def get_serializer_class(self):
         """
@@ -186,7 +203,7 @@ class VendorViewSet(ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    def perform_destroy(self, instance):
+    def destroy(self, request, *args, **kwargs):
         """
         Delete a vendor account.
 
@@ -195,6 +212,7 @@ class VendorViewSet(ModelViewSet):
 
         Allows future extensions such as soft deletes or audit logging.
         """
+        instance = self.get_object()
         delete_vendor(instance)
         
         return Response(

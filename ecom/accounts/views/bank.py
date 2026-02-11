@@ -3,6 +3,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.throttling import UserRateThrottle
 from rest_framework import status
 
 from accounts.models import BankAccount
@@ -20,6 +22,9 @@ from core.permissions import (
     IsBankAccountOwner, IsAdmin
 )
 
+class StrictBankThrottle(UserRateThrottle):
+    rate = "5/hour"
+
 class BankAccountViewSet(ModelViewSet):
     """
     Bank account CRUD operations.
@@ -33,6 +38,7 @@ class BankAccountViewSet(ModelViewSet):
     renderer_classes = [JSONRenderer]
     pagination_class = None
     http_method_names = ["get", "post", "patch", "delete"]
+    throttle_classes = [ScopedRateThrottle]
 
     def get_queryset(self):
         """
@@ -51,6 +57,25 @@ class BankAccountViewSet(ModelViewSet):
             return BankAccount.objects.none()
 
         return BankAccount.objects.filter(vendor=vendor)
+    
+    
+    def get_throttles(self):
+        """
+
+        """
+        if self.action == "create":
+            self.throttle_scope = "bank_create"
+
+        elif self.action in ["update", "partial_update"]:
+            self.throttle_classes = [StrictBankThrottle]
+
+        elif self.action == "destroy":
+            self.throttle_scope = "bank_delete"
+
+        elif self.action in ["list", "retrieve"]:
+            self.throttle_scope = "bank_read"
+
+        return super().get_throttles()
 
 
     def get_serializer_class(self):
