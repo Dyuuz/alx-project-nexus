@@ -136,9 +136,6 @@ class LoginViewSet(GenericViewSet):
     permission_classes = [AllowAny]
     renderer_classes = [JSONRenderer]
 
-    @extend_schema(
-      responses={200: LoginResponseSerializer}
-    )
     def create(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
