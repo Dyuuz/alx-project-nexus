@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    command: ./start.sh
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    restart: always
+
+  celery:
+    build: .
+    command: celery -A ecom worker --loglevel=info
+    env_file:
+      - .env
+    restart: always
+
+  beat:
+    build: .
+    command: celery -A ecom beat --loglevel=info
+    env_file:
+      - .env
+    restart: always
