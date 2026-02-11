@@ -21,3 +21,17 @@ class CustomUserAdmin(admin.ModelAdmin):
     search_fields = ("email", "first_name", "last_name")
 
     ordering = ("-created_at",)
+    
+    def save_model(self, request, obj, form, change):
+        """
+        Route admin updates through the user service
+        to enforce system-level rules.
+        """
+        data = form.cleaned_data
+
+        if change:
+            # Update existing user via service
+            update_user(obj, data)
+        else:
+            # Creating a user — let Django handle it
+            super().save_model(request, obj, form, change)
