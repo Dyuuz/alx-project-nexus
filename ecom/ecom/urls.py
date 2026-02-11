@@ -24,20 +24,17 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/v1/', include('accounts.urls')),
-    path('api/v1/', include('cart.urls')),
-    path('api/v1/', include('core.urls')),
-    path('api/v1/', include('orders.urls')),
-    path('api/v1/', include('payments.urls')),
-    path('api/v1/', include('products.urls')),
-
+    
+    path('api/v1/', include([
+        path('', include('accounts.urls')),
+        path('', include('cart.urls')),
+        path('', include('core.urls')),
+        path('', include('orders.urls')),
+        path('', include('payments.urls')),
+        path('', include('products.urls')),
+    ])),
    
-    # OpenAPI schema
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-
-    # Swagger UI
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-
-    # Redoc
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
