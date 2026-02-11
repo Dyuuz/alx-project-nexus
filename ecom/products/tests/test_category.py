@@ -12,8 +12,10 @@ def test_category_list_is_public(api_client, admin_user, category):
 
     assert response.status_code == status.HTTP_200_OK
     print(response.data)
-    # assert len(response.data) == 1
-    # assert response.data[0]["name"] == "Electronics"
+    
+    data = response.data["data"]
+    assert len(data) == 1
+    assert data[0]["name"] == "Electronics"
 
 
 @pytest.mark.django_db
@@ -22,8 +24,9 @@ def test_category_retrieve_is_public(api_client, category):
 
     response = api_client.get(url)
 
+    data = response.data["data"]
     assert response.status_code == status.HTTP_200_OK
-    assert response.data["slug"] == "electronics"
+    assert data["slug"] == "electronics"
 
 
 @pytest.mark.django_db

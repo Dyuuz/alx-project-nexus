@@ -1,13 +1,30 @@
 import pytest
+from io import BytesIO
+from PIL import Image
 from django.urls import reverse
 from rest_framework import status
 from products.models import Category, Product
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+def create_test_image():
+    file = BytesIO()
+    image = Image.new("RGB", (100, 100), color="red")
+    image.save(file, "JPEG")
+    file.seek(0)
+
+    return SimpleUploadedFile(
+        "test.jpg",
+        file.read(),
+        content_type="image/jpeg"
+    )
 
 @pytest.mark.django_db
 def test_vendor_can_create_product(api_client, product_vendor_user, category):
     api_client.force_authenticate(user=product_vendor_user)
 
     url = reverse("product-list")
+    image = create_test_image()
+    
     payload = {
         "name": "iphone 15",
         "description": "Latest Apple smartphone",
@@ -15,9 +32,11 @@ def test_vendor_can_create_product(api_client, product_vendor_user, category):
         "original_price": "1000.00",
         "discount_percent": 10,
         "stock": 5,
+        "image": image
     }
 
-    response = api_client.post(url, payload, format="json")
+    response = api_client.post(url, payload, format="multipart")
+    print(response.data)
 
     assert response.status_code == 201
 
@@ -34,15 +53,19 @@ def test_vendor_cannot_spoof_vendor_on_create(
     api_client.force_authenticate(user=product_vendor_user)
 
     url = reverse("product-list")
+    image = create_test_image()
+    
     payload = {
         "name": "Laptop",
         "description": "Latest Apple laptop",
         "vendor": other_vendor_user.vendor_profile.id,
         "category": category.id,
         "original_price": "2000.00",
+        "image": image
     }
 
-    response = api_client.post(url, payload, format="json")
+    response = api_client.post(url, payload, format="multipart")
+    print(response.data)
 
     assert response.status_code == 201
 
