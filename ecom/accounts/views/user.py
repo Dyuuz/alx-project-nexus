@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema
 
-from accounts.serializers.login import LoginSerializer
+from accounts.serializers.login import LoginSerializer, LoginResponseSerializer
 from accounts.serializers.user import (
     UserCreateSerializer,
     UserUpdateSerializer,
@@ -133,11 +133,16 @@ class UserViewSet(ModelViewSet):
 
 
 class LoginViewSet(GenericViewSet):
+    serializer_class = LoginSerializer
     permission_classes = [AllowAny]
     renderer_classes = [JSONRenderer]
 
+    @extend_schema(
+        responses={200: LoginResponseSerializer},
+        description="Authenticate user and return JWT tokens."
+    )
     def create(self, request):
-        serializer = LoginSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
