@@ -25,7 +25,7 @@ jobs:
           --health-retries=5
 
     env:
-        DEBUG: False
+        DEBUG: True
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         ALLOWED_HOSTS:  ${{ secrets.ALLOWED_HOSTS }}
         CSRF_TRUSTED_ORIGINS:  ${{ secrets.CSRF_TRUSTED_ORIGINS }}
