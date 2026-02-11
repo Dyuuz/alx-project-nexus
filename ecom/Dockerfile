@@ -1,10 +1,16 @@
 FROM python:3.11-slim
 WORKDIR /app
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc libpq-dev bash \
- && rm -rf /var/lib/apt/lists/*
+    gcc \
+    bash \
+    libpq-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python requirements
 COPY requirements.txt .
