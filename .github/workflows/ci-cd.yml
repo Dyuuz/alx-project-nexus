@@ -25,7 +25,20 @@ jobs:
           --health-retries=5
 
     env:
-       
+        DEBUG: False
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        ALLOWED_HOSTS:  ${{ secrets.ALLOWED_HOSTS }}
+        CSRF_TRUSTED_ORIGINS:  ${{ secrets.CSRF_TRUSTED_ORIGINS }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        REDIS_URL:  ${{ secrets.REDIS_URL }}
+        EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
+        CART_TTL_HOURS: 30
+        CHECKOUT_TTL_HOURS: 30
+        ORDER_PAYMENT_TTL_HOURS: 36
+        PAYMENT_REMINDER_24H_TTL_HOURS: 24
+        FINAL_PAYMENT_REMINDER_TTL_HOURS_START: 32
+        FINAL_PAYMENT_REMINDER_TTL_HOURS_END: 36
+        CRITICAL_INACTIVITY_HOURS: 48
 
     steps:
       - name: Checkout repository
@@ -51,7 +64,7 @@ jobs:
         run: pytest --reuse-db
 
   deploy:
-    needs: test  
+    needs: test   # 🔥 THIS IS IMPORTANT
     runs-on: ubuntu-latest
 
     steps:
