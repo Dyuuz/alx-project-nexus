@@ -74,7 +74,7 @@ def send_vendor_low_stock_alerts(self, product_ids):
     try:
         products = (
             Product.objects
-            .select_related("vendor")
+            .select_related("vendor__user")
             .filter(
                 id__in=product_ids,
                 low_stock_alert_sent=False,
@@ -87,13 +87,14 @@ def send_vendor_low_stock_alerts(self, product_ids):
             products_by_vendor[product.vendor].append(product)
 
         for vendor, vendor_products in products_by_vendor.items():
-            if not vendor.email:
+            email = vendor.user.email
+            if not email:
                 continue
 
             lines = []
             for product in vendor_products:
                 lines.append(
-                    f"- {product.name}: {product.stock} left "
+                    f"- {product.name}: {product.stock} left"
                     f"(threshold {product.low_stock_threshold})"
                 )
 
@@ -103,7 +104,7 @@ def send_vendor_low_stock_alerts(self, product_ids):
                 + "\n\nPlease restock to avoid selling out."
             )
 
-            if async_to_sync(send_mail_helper)():
+            if async_to_sync(send_mail_helper)(message, email):
                 # Mark all products as alerted
                 Product.objects.filter(
                     id__in=[p.id for p in vendor_products]

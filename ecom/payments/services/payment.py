@@ -132,8 +132,12 @@ class PaymentService:
                 count = 0
                 
                 for payment in payments.iterator():
+                    product_names = ", ".join(item.product.name for item in payment.order.cart.items)
+
+                    message = f"Your payment for '{product_names}' has been confirmed."
+                    email = payment.order.cart.customer.email
                     
-                    if async_to_sync(send_mail_helper)():
+                    if async_to_sync(send_mail_helper)(message, email):
                         payment.payment_alert = True
                         payment.save(update_fields=["payment_alert"])
                         count+=1
@@ -176,7 +180,12 @@ class PaymentService:
                 count = 0
                 
                 for order in orders.iterator():
-                    if async_to_sync(send_mail_helper)():
+                    product_names = ", ".join(item.product.name for item in order.cart.items)
+
+                    message = f"Your payment for '{product_names}' is still pending. Your order will expire in 12hours."
+                    email = order.customer.email
+                    
+                    if async_to_sync(send_mail_helper)(message, email):
                         order.payment_reminder_sent = True
                         order.save(update_fields=["payment_reminder_sent"])
                         count+=1

@@ -34,7 +34,7 @@ class VendorSerializer(serializers.ModelSerializer):
         """
         user = self.context["request"].user
 
-        if user.role == "vendor":
+        if Vendor.objects.filter(user=user).exists():
             raise serializers.ValidationError(
                 "A vendor profile already exists for this user."
             )
