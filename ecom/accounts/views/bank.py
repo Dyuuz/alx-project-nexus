@@ -31,6 +31,7 @@ class BankAccountViewSet(ModelViewSet):
     """
     queryset = BankAccount.objects.all()
     renderer_classes = [JSONRenderer]
+    pagination_class = None
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_queryset(self):
