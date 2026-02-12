@@ -22,6 +22,14 @@ Core Principle:
 
 ---
 
+## 🔗 Live Project
+
+- 🌍 **Live API:** [Live API](https://stockbridge-m2zc.onrender.com/api/v1/login/)
+- 📘 **API Documentation (Swagger):** [API Docs](https://stockbridge-m2zc.onrender.com/api/docs/)
+- 💻 **GitHub Repository:** [GitHub Repo](https://github.com/Dyuuz/alx-project-nexus)
+
+---
+
 ## 🏗 Architecture Overview
 
 - RESTful API design
