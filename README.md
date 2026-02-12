@@ -24,8 +24,8 @@ Core Principle:
 
 ## 🔗 Live Project
 
-- 🌍 **Live API:** [Live API](https://stockbridge-m2zc.onrender.com/api/v1/login/)
-- 📘 **API Documentation (Swagger):** [API Docs](https://stockbridge-m2zc.onrender.com/api/docs/)
+- 🌍 **Live API:** [Live API](https://stockbridge-m2zc.onrender.com/api/docs/)
+- 📘 **API Documentation (Swagger):** [API Docs](https://stockbridge-m2zc.onrender.com/api/redoc/)
 - 💻 **GitHub Repository:** [GitHub Repo](https://github.com/Dyuuz/alx-project-nexus)
 
 ---
