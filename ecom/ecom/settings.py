@@ -17,6 +17,10 @@ from dotenv import load_dotenv
 import cloudinary
 import environ
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+from core.log_configs.logging_context import before_send
 
 load_dotenv()
 
@@ -67,6 +71,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.LoggingContextMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -117,6 +122,9 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
+    ),
+    "DEFAULT_RENDERER_CLASSES": (
+        "rest_framework.renderers.JSONRenderer",
     ),
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardResultsPagination",
@@ -206,6 +214,26 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    integrations=[DjangoIntegration()],
+    before_send=before_send,
+    environment=os.getenv("ENVIRONMENT", "development"),
+    release=os.getenv("RELEASE_VERSION"),
+    traces_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.05,  # performance monitoring
+    send_default_pii=True,  # allows user info
+)
+
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    integrations=[
+        DjangoIntegration(),
+        CeleryIntegration(),
+    ],
+    traces_sample_rate=0.2,
+    send_default_pii=True,
+)
+
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
@@ -283,51 +311,150 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+if not DEBUG:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "verbose": {
-            "format": "[{levelname}] {asctime} {process:d} {name}: {message}",
-            "style": "{",
+        "formatters": {
+            "json": {
+                "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+                "format": (
+                    "%(levelname)s "
+                    "%(asctime)s "
+                    "%(name)s "
+                    "%(message)s "
+                    "%(request_id)s "
+                    "%(user_id)s "
+                ),
+            },
         },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
+
+        "filters": {
+            "request_user": {
+                "()": "core.log_configs.logging_filters.RequestUserFilter",
+            },
+        },
+
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "json",
+                "filters": ["request_user"],
+            },
+        },
+
+        # Root logger only
+        "root": {
+            "handlers": ["console"],
             "level": "INFO",
         },
-        "error_file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": LOG_DIR / "errors.log",
-            "maxBytes": 5 * 1024 * 1024,
-            "backupCount": 5,
-            "formatter": "verbose",
-            "level": "ERROR",   # 🔑 ONLY ERRORS
-            "encoding": "utf-8",
+    }
+
+else:
+    LOG_DIR = BASE_DIR / "logs"
+    LOG_DIR.mkdir(exist_ok=True)
+
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "json": {
+                "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+                "format": "%(levelname)s %(asctime)s %(name)s %(message)s %(request_id)s %(user_id)s",
+            },
+            "verbose": {
+                "format": "[{levelname}] {asctime} {process:d} {name}: {message}",
+                "style": "{",
+            },
         },
-    },
-    "root": {
-        "handlers": ["console", "error_file"],
-        "level": "INFO",  # allow INFO to console
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console", "error_file"],
+        
+        "filters": {
+            "info_only": {
+                "()": "core.log_configs.logging_filters.InfoOnlyFilter",
+            },
+            "request_user": {
+                "()": "core.log_configs.logging_filters.RequestUserFilter",
+            },
+        },
+        
+        # ROOT LOGGER (global fallback)
+        "root": {
+            "handlers": ["console", "app_file", "app_error_file"],
             "level": "INFO",
-            "propagate": False,
         },
-        "celery": {
-            "handlers": ["console", "error_file"],
-            "level": "INFO",
-            "propagate": False,
+        
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "json",
+                "filters": ["request_user"],
+            },
+            "app_file": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": LOG_DIR / "app.log",
+                "maxBytes": 5 * 1024 * 1024,
+                "backupCount": 5,
+                "formatter": "json",
+                "level": "INFO",
+                "filters": ["info_only", "request_user"],
+            },
+            "app_error_file": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": LOG_DIR / "app_errors.log",
+                "maxBytes": 5 * 1024 * 1024,
+                "backupCount": 5,
+                "formatter": "json",
+                "level": "ERROR",
+                "filters": ["request_user"],
+            },
         },
-    },
-}
+        
+        # Optional named loggers
+        "loggers": {
+            "django.utils.autoreload": {
+                "handlers": ["console"],
+                "level": "INFO", 
+                "propagate": False,
+            },
+            "urllib3.connectionpool": {
+                "handlers": ["console"],
+                "level": "INFO", 
+                "propagate": False,
+            },
+            # Each specific apps
+            # "accounts": {
+            #     "handlers": ["console", "app_file", "app_error_file"],
+            #     "level": "INFO",
+            #     "propagate": False,
+            # },
+            # "cart": {
+            #     "handlers": ["console", "app_file", "app_error_file"],
+            #     "level": "INFO",
+            #     "propagate": False,
+            # },
+            # "core": {
+            #     "handlers": ["console", "app_file", "app_error_file"],
+            #     "level": "INFO",
+            #     "propagate": False,
+            # },
+            # "orders": {
+            #     "handlers": ["console", "app_file", "app_error_file"],
+            #     "level": "INFO",
+            #     "propagate": False,
+            # },
+            # "payments": {
+            #     "handlers": ["console", "app_file", "app_error_file"],
+            #     "level": "INFO",
+            #     "propagate": False,
+            # },
+            # "products": {
+            #     "handlers": ["console", "app_file", "app_error_file"],
+            #     "level": "INFO",
+            #     "propagate": False,
+            # },
+        },
+    }
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
