@@ -27,6 +27,9 @@ from accounts.services.user_service import (
 from core.permissions import IsAdmin, IsAdminOrSelf
 from accounts.services.email_verification import EmailVerificationService
 from accounts.serializers.email_verification import EmailVerif_ResponseSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 signer = TimestampSigner()
 
