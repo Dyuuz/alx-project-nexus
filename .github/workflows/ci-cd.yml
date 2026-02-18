@@ -34,6 +34,9 @@ jobs:
         CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
         CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
         CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        RELEASE_VERSION: ${{ secrets.RELEASE_VERSION }}
+        ENVIRONMENT: ${{ secrets.ENVIRONMENT }}
         EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
         CART_TTL_HOURS: 30
         CHECKOUT_TTL_HOURS: 30
