@@ -11,6 +11,9 @@ from cart.serializers.cart import CartSerializer
 from rest_framework.throttling import ScopedRateThrottle
 from core.pagination import StandardResultsPagination
 from rest_framework.decorators import action
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CartViewSet(ModelViewSet):
     """
@@ -73,7 +76,7 @@ class CartViewSet(ModelViewSet):
             )
             .prefetch_related("items__product")
             .order_by("-updated_at")
-        )
+        )    
         
         page = self.paginate_queryset(carts)
         if page is not None:
@@ -81,6 +84,7 @@ class CartViewSet(ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = CartSerializer(carts, many=True)
+        logger.info("carts retirved successfully")
 
         return Response(
             {
