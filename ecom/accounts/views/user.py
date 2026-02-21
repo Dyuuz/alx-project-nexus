@@ -10,7 +10,6 @@ from rest_framework.decorators import action
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from core.utils.mail_sender import send_mail_helper
 from rest_framework.throttling import ScopedRateThrottle
 
 from accounts.serializers.login import LoginSerializer, LoginResponseSerializer
@@ -108,10 +107,6 @@ class UserViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = create_user(serializer.validated_data)
-        
-        token_message = EmailVerificationService.generate_email_token(user)
-        subject = "Email Verification Link"
-        send_mail_helper.delay(subject, token_message, user.email)
 
         read_serializer = UserReadSerializer(user)
 
@@ -259,6 +254,16 @@ class EmailVerificationViewSet(GenericViewSet):
                     "status": "error",
                     "code": "INVALID_TOKEN",
                     "message": "Invalid verification link"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+            
+        except User.DoesNotExist:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_TOKEN",
+                    "message": "User does not exist"
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
