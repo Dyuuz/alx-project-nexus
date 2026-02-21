@@ -1,10 +1,11 @@
 from django.db import transaction
 from django.contrib.auth import get_user_model
+from accounts.services.email_verification import EmailVerificationService
+from core.utils.mail_sender import send_mail_helper
 
 User = get_user_model()
 
 
-@transaction.atomic
 def create_user(data: dict) -> User:
     """
     Create a new User instance.
@@ -21,7 +22,27 @@ def create_user(data: dict) -> User:
     Returns:
         User: The newly created User instance.
     """
-    return User.objects.create_user(**data)
+    
+    with transaction.atomic():
+        user = User.objects.create_user(**data)
+
+        transaction.on_commit(
+            lambda: send_mail_helper.delay(
+                "Welcome",
+                f"Hi {user.first_name}!\nYour registration was successful",
+                user.email,
+            )
+        )
+
+        transaction.on_commit(
+            lambda: send_mail_helper.delay(
+                "Email Verification Link",
+                EmailVerificationService.generate_email_token(user.pk),
+                user.email,
+            )
+        )
+
+    return user
 
 
 
