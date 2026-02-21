@@ -2,6 +2,7 @@ from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.db import transaction
+from core.utils.mail_sender import send_mail_helper
 
 User = get_user_model()
 signer = TimestampSigner()
@@ -58,5 +59,13 @@ class EmailVerificationService:
             if not user.email_verified:
                 user.email_verified = True
                 user.save(update_fields=["email_verified"])
+                
+                transaction.on_commit(
+                    lambda: send_mail_helper.delay(
+                        "Email Verified",
+                        f"Hi {user.first_name}!\nYour account is now verified",
+                        user.email,
+                    )
+                )
 
         return user
