@@ -69,3 +69,28 @@ class EmailVerificationService:
                 )
 
         return user
+
+    @staticmethod
+    def resend_verification(email):
+        """
+        Resend the email verification link to the user.
+        """
+        user = User.objects.filter(email=email).first()
+
+        # Prevent enumeration attack
+        if not user:
+            return False
+
+        if user.email_verified:
+            return "already_verified"
+
+        message = EmailVerificationService.generate_email_token(user.pk)
+
+        if message:
+            send_mail_helper.delay(
+                "Email Verification",
+                message,
+                user.email
+            )
+
+        return True
