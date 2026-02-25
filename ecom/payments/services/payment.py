@@ -109,7 +109,7 @@ class PaymentService:
         message = "Your payment is confirmed"
         subject = "Payment Confirmed"
         
-        if async_to_sync(send_mail_helper)(subject, message, payment.order.customer.email):
+        if send_mail_helper(subject, message, payment.order.customer.email):
             payment.payment_alert = True
             payment.save(update_fields=["payment_alert"])
             
