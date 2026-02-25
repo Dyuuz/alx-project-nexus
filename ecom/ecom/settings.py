@@ -137,11 +137,26 @@ REST_FRAMEWORK = {
         # Accounts
         "login": "5/min",
         "register": "3/min",
-        "email_verify": "10/min",
         
         # Authenticated user actions
         "user_update": "20/min",
         "user_read": "60/min",
+        
+        #  Token refresh
+        "token_refresh": "10/min",
+        
+        # Password change flow for authenticated users
+        "password_change_request": "10/hour",
+        "password_change_verify": "10/hour",
+        "password_change_confirm": "10/hour",
+        
+        # Password reset flow for unauthenticated users
+        "password_reset_request": "10/hour",
+        "password_reset_confirm": "10/hour",
+        
+        # Email verification
+        "email_verify": "20/hour",
+        "resend_verification": "5/hour",
         
         # Bank
         "bank_create": "3/min",
@@ -216,7 +231,10 @@ SPECTACULAR_SETTINGS = {
 
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
-    integrations=[DjangoIntegration()],
+    integrations=[DjangoIntegration(
+        transaction_style='url',
+        middleware_spans=True,
+    )],
     before_send=before_send,
     environment=os.getenv("ENVIRONMENT", "development"),
     release=os.getenv("RELEASE_VERSION"),
