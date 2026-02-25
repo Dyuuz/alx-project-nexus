@@ -153,3 +153,13 @@ class IsProductOwnerOrAdmin(BasePermission):
             return obj.vendor_id == user.vendor_profile.id
 
         return False
+    
+
+class IsEmailVerified(BasePermission):
+    message = "Email not verified."
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user.is_authenticated and
+            request.user.email_verified
+        )
