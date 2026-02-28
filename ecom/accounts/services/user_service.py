@@ -225,7 +225,6 @@ class PasswordResetService:
             user.pk,
             timeout=PasswordResetService.RESET_TOKEN_EXPIRY
         )
-        print(reset_token)
 
         password_reset_url = (
             f"{settings.DJANGO_API_URL}"
