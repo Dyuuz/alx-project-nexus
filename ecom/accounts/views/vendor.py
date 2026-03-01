@@ -8,7 +8,7 @@ from rest_framework import status
 
 from accounts.models import Vendor
 from accounts.serializers.vendor import (
-    VendorSerializer, VendorUpdateSerializer,
+    VendorCreateSerializer, VendorUpdateSerializer,
     VendorReadSerializer,
 )
 from accounts.services.vendor_service import (
@@ -36,7 +36,6 @@ class VendorViewSet(ModelViewSet):
     Regular users can only view and update their own vendor account,
     while destructive actions are restricted to administrators.
     """
-    serializer_class = VendorSerializer
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post", "patch", "delete"]
     throttle_classes = [ScopedRateThrottle]
@@ -77,7 +76,7 @@ class VendorViewSet(ModelViewSet):
         serializer for retrieval operations to ensure data integrity.
         """
         if self.action == "create":
-            return VendorSerializer
+            return VendorCreateSerializer
         if self.action in ["update", "partial_update"]:
             return VendorUpdateSerializer
         return VendorReadSerializer
@@ -190,7 +189,7 @@ class VendorViewSet(ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         
-        vendor = update_vendor(self.get_object(), serializer.validated_data)
+        vendor = update_vendor(instance.pk, serializer.validated_data, instance.version)
         read_serializer = VendorReadSerializer(vendor)
         
         return Response(
@@ -213,7 +212,7 @@ class VendorViewSet(ModelViewSet):
         Allows future extensions such as soft deletes or audit logging.
         """
         instance = self.get_object()
-        delete_vendor(instance)
+        delete_vendor(instance.pk)
         
         return Response(
             {
