@@ -83,14 +83,24 @@ class UserService:
 
 
     @transaction.atomic
-    def delete_user(user: User) -> None:
+    def delete_user(user_id) -> None:
         """
         Delete a user account within an atomic transaction.
 
         Ensures complete removal of the user record,
         guaranteeing rollback if any error occurs.
         """
+
+        user = User.objects.get(pk=user_id)
         user.delete()
+
+        transaction.on_commit(
+            lambda: send_mail_helper.delay(
+                "User Account Deletion Successful",
+                f"Hi {user.first_name}!\nYour account is deleted successfully",
+                user.email,
+            )
+        )
 
 
 class PasswordResetService:
