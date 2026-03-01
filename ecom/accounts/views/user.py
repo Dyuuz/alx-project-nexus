@@ -41,7 +41,6 @@ class UserViewSet(ModelViewSet):
     profile updates with optimistic locking, and administrative deletion.
     """
     
-    queryset = User.objects.all()
     renderer_classes = [JSONRenderer]
     http_method_names = ["get", "post", "patch", "delete"]
     throttle_classes = [ScopedRateThrottle]
@@ -173,7 +172,8 @@ class UserViewSet(ModelViewSet):
         from the system.
         """
         instance = self.get_object()
-        UserService.delete_user(instance)
+        UserService.delete_user(instance.pk)
+        
         return Response(
             {
                 "status": "success",
