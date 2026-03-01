@@ -86,6 +86,8 @@ class Vendor(models.Model):
     business_name = models.CharField(max_length=100)
     business_address = models.TextField()
     verified = models.BooleanField(default=False)
+    
+    version = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
