@@ -1,5 +1,6 @@
 from django.db import transaction
 from accounts.models import Vendor, CustomUser
+from django.db.models import F
 from products.models import Product
 from collections import defaultdict
 from asgiref.sync import async_to_sync
@@ -28,11 +29,19 @@ def create_vendor(user, data):
     vendor = Vendor.objects.create(user=user, **data)
     CustomUser.objects.filter(id=user.id).update(role="vendor")
     
+    transaction.on_commit(
+        lambda: send_mail_helper.delay(
+            "Vendor Account Creation Successful",
+            f"Hi {vendor.user.first_name}!\nYour registration was successful",
+            user.email,
+        )
+    )
+    
     return vendor
 
 
 @transaction.atomic
-def update_vendor(vendor: Vendor, data):
+def update_vendor(user_id, data: dict, current_version: int):
     """
     Update an existing Vendor instance with new data.
 
@@ -43,14 +52,22 @@ def update_vendor(vendor: Vendor, data):
     Returns:
         Vendor: The updated Vendor instance.
     """
-    for field, value in data.items():
-        setattr(vendor, field, value)
-    vendor.save()
-    return vendor
+    updated = Vendor.objects.filter(
+        id=user_id,
+        version=current_version
+    ).update(
+        **data,
+        version=F('version') + 1
+    )
+
+    if updated == 0:
+        raise Exception("Conflict detected.")
+
+    return CustomUser.objects.get(id=user_id)
 
 
 @transaction.atomic
-def delete_vendor(vendor: Vendor):
+def delete_vendor(vendor_id):
     """
     Delete an existing Vendor instance.
 
@@ -63,7 +80,16 @@ def delete_vendor(vendor: Vendor):
     Returns:
         None
     """
+    vendor = Vendor.objects.get(pk=vendor_id)
     vendor.delete()
+    
+    transaction.on_commit(
+        lambda: send_mail_helper.delay(
+            "Vendor Account Deletion Successful",
+            f"Hi {vendor.user.first_name}!\nYour account is deleted successfully",
+            vendor.user.email,
+        )
+    )
 
 
 @transaction.atomic
