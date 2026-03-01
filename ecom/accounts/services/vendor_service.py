@@ -5,6 +5,7 @@ from products.models import Product
 from collections import defaultdict
 from asgiref.sync import async_to_sync
 from core.utils.mail_sender import send_mail_helper
+from core.exceptions import ConflictException
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ def create_vendor(user, data):
 
 
 @transaction.atomic
-def update_vendor(user_id, data: dict, current_version: int):
+def update_vendor(vendor_id, data: dict, current_version: int):
     """
     Update an existing Vendor instance with new data.
 
@@ -53,7 +54,7 @@ def update_vendor(user_id, data: dict, current_version: int):
         Vendor: The updated Vendor instance.
     """
     updated = Vendor.objects.filter(
-        id=user_id,
+        id=vendor_id,
         version=current_version
     ).update(
         **data,
@@ -61,9 +62,9 @@ def update_vendor(user_id, data: dict, current_version: int):
     )
 
     if updated == 0:
-        raise Exception("Conflict detected.")
+        raise ConflictException()
 
-    return CustomUser.objects.get(id=user_id)
+    return Vendor.objects.get(id=vendor_id)
 
 
 @transaction.atomic
