@@ -2,7 +2,7 @@ from rest_framework import serializers
 from accounts.models import Vendor
 
 
-class VendorSerializer(serializers.ModelSerializer):
+class VendorCreateSerializer(serializers.ModelSerializer):
     """
     Serializer for creating a new Vendor instance.
 
