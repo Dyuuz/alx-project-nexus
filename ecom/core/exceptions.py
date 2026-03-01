@@ -1,5 +1,6 @@
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework import status
 import sentry_sdk
@@ -7,6 +8,11 @@ import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+class ConflictException(APIException):
+    status_code = 409
+    default_detail = "Conflict detected. Record was modified by another request."
+    default_code = "conflict"
 
 
 def custom_exception_handler(exc, context):
