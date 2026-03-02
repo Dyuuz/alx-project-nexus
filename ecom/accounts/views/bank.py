@@ -98,9 +98,6 @@ class BankAccountViewSet(ModelViewSet):
         if self.action in ["list", "update", "partial_update"]:
             return [IsAuthenticated(), IsBankAccountOwner()]
 
-        if self.action == "list":
-            return [IsAuthenticated()]
-
         if self.action == "destroy":
             return [IsAuthenticated(), IsAdmin()]
 

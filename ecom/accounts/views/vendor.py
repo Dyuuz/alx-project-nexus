@@ -95,9 +95,6 @@ class VendorViewSet(ModelViewSet):
         if self.action in ["list", "update", "partial_update"]:
             return [IsAuthenticated(), IsAdminOrSelf()]
 
-        if self.action == "list":
-            return [IsAuthenticated()]
-
         if self.action == "destroy":
             return [IsAuthenticated(), IsAdmin()]
 
