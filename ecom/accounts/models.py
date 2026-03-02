@@ -75,6 +75,16 @@ class CustomUser(AbstractUser):
         return f"{self.first_name} {self.last_name}"
     
 class Vendor(models.Model):
+    
+    class ReviewStatus(models.TextChoices):
+        APPLICANT = "APPLICANT", "Applicant"
+        UNDER_REVIEW = "UNDER_REVIEW", "Under Review"
+        APPROVED = "APPROVED", "Approved"
+
+    class ActivationStatus(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        INACTIVE = "INACTIVE", "Inactive"
+        
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     user = models.OneToOneField(
@@ -83,9 +93,21 @@ class Vendor(models.Model):
         related_name="vendor_profile",
     )
 
+    business_id = models.BigIntegerField(unique=True, blank=True, null=True)
     business_name = models.CharField(max_length=100)
     business_address = models.TextField()
-    verified = models.BooleanField(default=False)
+    
+    review_status = models.CharField(
+        max_length=20,
+        choices=ReviewStatus.choices,
+        default=ReviewStatus.UNDER_REVIEW,
+    )
+
+    activation_status = models.CharField(
+        max_length=10,
+        choices=ActivationStatus.choices,
+        default=ActivationStatus.INACTIVE,
+    )
     
     version = models.PositiveIntegerField(default=0)
 
