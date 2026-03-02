@@ -12,13 +12,15 @@ class VendorCreateSerializer(serializers.ModelSerializer):
         model = Vendor
         fields = (
             "id",
+            "business_id",
             "business_name",
             "business_address",
-            "verified",
+            "review_status",
+            "activation_status",
             "updated_at",
         )
-        read_only_fields = ("id", "verified", "updated_at")
-        
+        read_only_fields = ("id", "review_status", "activation_status", "updated_at")
+
     def validate(self, attrs):
         """
         Validate the incoming data for creating a Vendor profile.
@@ -72,7 +74,7 @@ class VendorUpdateSerializer(serializers.ModelSerializer):
             "business_name",
             "business_address",
         )
-        read_only_fields = ("id", "verified", "updated_at")
+        read_only_fields = ("id", "business_id", "review_status", "activation_status", "updated_at")
 
 
     def update(self, instance, validated_data):
@@ -102,8 +104,10 @@ class VendorReadSerializer(serializers.ModelSerializer):
         model = Vendor
         fields = [
             "id",
+            "business_id",
             "business_name",
             "business_address",
-            "verified",
+            "review_status",
+            "activation_status",
             "updated_at",
         ]
