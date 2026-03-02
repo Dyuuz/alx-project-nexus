@@ -43,6 +43,7 @@ def vendor_user(normal_user):
     normal_user.save()
     vendor = Vendor.objects.create(
         user=normal_user,
+        business_id=166777217899,
         business_name="Test Shop",
         business_address="123 Street"
     )
@@ -61,6 +62,7 @@ def product_vendor_user(db):
     )
     Vendor.objects.create(
         user=user,
+        business_id=16677767899,
         business_name="Vendor Shop",
         business_address="Lagos",
     )
@@ -78,6 +80,7 @@ def other_vendor_user(db):
     )
     Vendor.objects.create(
         user=user,
+        business_id=16677755699,
         business_name="Other Shop",
         business_address="Abuja",
     )
