@@ -156,7 +156,7 @@ class IsProductOwnerOrAdmin(BasePermission):
     
 
 class IsEmailVerified(BasePermission):
-    message = "Email not verified."
+    message = "Verify your email to access this resource."
 
     def has_permission(self, request, view):
         return bool(
