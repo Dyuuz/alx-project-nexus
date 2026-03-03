@@ -170,8 +170,7 @@ class BankAccountViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         bank_account = update_bank_account(
-            bank_account=instance,
-            data=serializer.validated_data,
+            instance.pk, data=serializer.validated_data, current_version=instance.version
         )
 
         read_serializer = BankAccountReadSerializer(bank_account)
@@ -193,7 +192,7 @@ class BankAccountViewSet(ModelViewSet):
         Only admins are allowed to perform this action.
         """
         instance = self.get_object()
-        delete_bank_account(instance)
+        delete_bank_account(instance.pk)
 
         return Response(
             {

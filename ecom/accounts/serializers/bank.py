@@ -99,6 +99,5 @@ class BankAccountReadSerializer(serializers.ModelSerializer):
             "number",
             "name",
             "bank_name",
-            "verified",
             "updated_at",
         ]

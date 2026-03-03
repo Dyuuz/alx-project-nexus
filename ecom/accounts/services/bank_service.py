@@ -1,6 +1,8 @@
 from django.db import transaction
 from accounts.models import BankAccount
-from rest_framework.exceptions import ValidationError
+from core.utils.mail_sender import send_mail_helper
+from core.exceptions import ConflictException
+from django.db.models import F
 
 
 @transaction.atomic
@@ -19,20 +21,24 @@ def create_bank_account(vendor, data):
     Returns:
         BankAccount: The newly created BankAccount instance.
     """
-    if BankAccount.objects.filter(vendor=vendor).exists():
-        raise ValidationError({
-            "detail": "Vendor already has a bank account."
-        })
-
-    return BankAccount.objects.create(
+    bank_account = BankAccount.objects.create(
         vendor=vendor,
         **data
     )
+    
+    transaction.on_commit(
+        lambda: send_mail_helper.delay(
+            "Bank Account Creation Successful",
+            f"Hi {vendor.user.first_name}!\nYour bank account has been created successfully.",
+            vendor.user.email,
+        )
+    )
 
+    return bank_account
 
 
 @transaction.atomic
-def update_bank_account(bank_account, data):
+def update_bank_account(bank_account_id,  data: dict, current_version: int):
     """
     Update an existing BankAccount instance with new data.
 
@@ -45,14 +51,32 @@ def update_bank_account(bank_account, data):
     Returns:
         BankAccount: The updated BankAccount instance.
     """
-    for field, value in data.items():
-        setattr(bank_account, field, value)
-    bank_account.save()
-    return bank_account
+    updated = BankAccount.objects.filter(
+        id=bank_account_id,
+        version=current_version
+    ).update(
+        **data,
+        version=F('version') + 1
+    )
+
+    if updated == 0:
+        raise ConflictException()
+
+    updated_instance = BankAccount.objects.get(id=bank_account_id)
+
+    transaction.on_commit(
+        lambda: send_mail_helper.delay(
+            "Bank Account Update Successful",
+            f"Hi {updated_instance.vendor.user.first_name}!\nYour bank account has been updated successfully.",
+            updated_instance.vendor.user.email,
+        )
+    )
+
+    return BankAccount.objects.get(id=bank_account_id)
 
 
 @transaction.atomic
-def delete_bank_account(bank_account):
+def delete_bank_account(bank_account_id):
     """
     Delete an existing BankAccount instance.
 
@@ -65,4 +89,15 @@ def delete_bank_account(bank_account):
     Returns:
         None
     """
+    bank_account = BankAccount.objects.get(pk=bank_account_id)
+    first_name = bank_account.vendor.user.first_name
+    email = bank_account.vendor.user.email
     bank_account.delete()
+    
+    transaction.on_commit(
+        lambda: send_mail_helper.delay(
+            "Bank Account Deletion Successful",
+            f"Hi {first_name}!\nYour account is deleted successfully",
+            email,
+        )
+    )
