@@ -20,6 +20,7 @@ def admin_user(db):
         first_name="Admin",
         last_name="User",
         phone_number="+2348012345678",
+        email_verified=True,
         role="admin",
     )
 
@@ -31,6 +32,7 @@ def normal_user(db):
         first_name="Normal",
         last_name="User",
         phone_number="+2348098765432",
+        email_verified=True,
         role="customer",
     )
 
