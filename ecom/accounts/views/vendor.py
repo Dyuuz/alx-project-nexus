@@ -93,7 +93,7 @@ class VendorViewSet(ModelViewSet):
             return [IsAuthenticated(), IsEmailVerified()]
 
         if self.action in ["list", "update", "partial_update"]:
-            return [IsAuthenticated(), IsAdminOrSelf(), IsEmailVerified(), IsVendor()]
+            return [IsAuthenticated(), IsAdminOrSelf(), IsEmailVerified(),  ()]
 
         if self.action == "destroy":
             return [IsAuthenticated(), IsAdmin()]

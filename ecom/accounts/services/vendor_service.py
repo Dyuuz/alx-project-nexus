@@ -82,13 +82,15 @@ def delete_vendor(vendor_id):
         None
     """
     vendor = Vendor.objects.get(pk=vendor_id)
+    first_name = vendor.user.first_name
+    email = vendor.user.email
     vendor.delete()
     
     transaction.on_commit(
         lambda: send_mail_helper.delay(
             "Vendor Account Deletion Successful",
-            f"Hi {vendor.user.first_name}!\nYour account is deleted successfully",
-            vendor.user.email,
+            f"Hi {first_name}!\nYour account is deleted successfully",
+            email,
         )
     )
 
