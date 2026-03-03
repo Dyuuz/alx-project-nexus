@@ -166,7 +166,8 @@ class BankAccount(models.Model):
     number = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200, help_text="Provide the exact bank account name")
     bank_name = models.CharField(max_length=200)
-    verified = models.BooleanField(default=False)
+    
+    version = models.PositiveIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
