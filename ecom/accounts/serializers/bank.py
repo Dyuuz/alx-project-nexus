@@ -15,13 +15,10 @@ class BankAccountCreateSerializer(serializers.ModelSerializer):
             "number",
             "name",
             "bank_name",
-            "bank_code",
-            "subaccount_code",
         )
         read_only_fields = ("id", "verified", "updated_at")
         extra_kwargs = {
             'number': {'validators': []},
-            'subaccount_code': {'validators': []},
         }
 
     def create(self, validated_data):
@@ -44,25 +41,15 @@ class BankAccountCreateSerializer(serializers.ModelSerializer):
         """
         request = self.context['request']
         user = request.user
+        
+        vendor = user.vendor_profile
 
-        # Reject customers
-        if user.role == "customer":
+        # Check if this vendor already has a bank account
+        if BankAccount.objects.filter(vendor=vendor).exists():
             raise serializers.ValidationError(
-                "Customers are not allowed to create bank accounts."
+                "Oops! A bank account for you already exists."
             )
-
-        # Only allow vendors
-        if user.role == "vendor":
-            try:
-                vendor = user.vendor_profile
-            except Vendor.DoesNotExist:
-                raise serializers.ValidationError("User is not a vendor.")
-
-            # Check if this vendor already has a bank account
-            if BankAccount.objects.filter(vendor=vendor).exists():
-                raise serializers.ValidationError(
-                    "Oops! A bank account for you already exists."
-                )
+            
         return attrs
 
     
@@ -78,8 +65,6 @@ class BankAccountUpdateSerializer(serializers.ModelSerializer):
             "number",
             "name",
             "bank_name",
-            "bank_code",
-            "subaccount_code",
         )
         read_only_fields = ("id", "verified", "updated_at")
 
@@ -114,8 +99,6 @@ class BankAccountReadSerializer(serializers.ModelSerializer):
             "number",
             "name",
             "bank_name",
-            "bank_code",
-            "subaccount_code",
             "verified",
             "updated_at",
         ]

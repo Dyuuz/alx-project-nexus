@@ -14,7 +14,7 @@ def create_bank_account(vendor, data):
     Args:
         vendor (User): The vendor (user) who owns the bank account.
         data (dict): Dictionary of bank account fields, e.g.,
-                     number, name, bank_name, bank_code, subaccount_code.
+                     number, name, bank_name.
 
     Returns:
         BankAccount: The newly created BankAccount instance.

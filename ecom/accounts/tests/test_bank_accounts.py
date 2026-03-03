@@ -17,8 +17,6 @@ def test_vendor_can_create_bank_account(api_client, vendor_user):
         "number": "0123456789",
         "name": "John Doe",
         "bank_name": "Access Bank",
-        "bank_code": "044",
-        "subaccount_code": "SUB_123456",
     }
 
     url = reverse("bank-account-list")
@@ -31,8 +29,6 @@ def test_vendor_can_create_bank_account(api_client, vendor_user):
         "number": "0123456789",
         "name": "John Doe",
         "bank_name": "Access Bank",
-        "bank_code": "044",
-        "subaccount_code": "SUB_123456",
     }
 
     url = reverse("bank-account-list")
@@ -52,7 +48,6 @@ def test_vendor_cannot_create_multiple_bank_accounts(api_client, vendor_user):
         number="1111111111",
         name="John Doe",
         bank_name="GTBank",
-        subaccount_code="SUB_EXISTING",
     )
 
     api_client.force_authenticate(user=vendor_user.user)
@@ -61,7 +56,6 @@ def test_vendor_cannot_create_multiple_bank_accounts(api_client, vendor_user):
         "number": "2222222222",
         "name": "John Doe",
         "bank_name": "Zenith Bank",
-        "subaccount_code": "SUB_NEW",
     }
 
     url = reverse("bank-account-list")
@@ -81,7 +75,6 @@ def test_vendor_can_retrieve_own_bank_account(api_client, vendor_user):
         number="3333333333",
         name="John Doe",
         bank_name="UBA",
-        subaccount_code="SUB_RETRIEVE",
     )
 
     api_client.force_authenticate(user=vendor_user.user)
@@ -121,7 +114,6 @@ def test_vendor_cannot_access_other_users_bank_account(api_client, normal_user, 
         number="4444444444",
         name="Admin User",
         bank_name="First Bank",
-        subaccount_code="SUB_ADMIN",
     )
 
     api_client.force_authenticate(user=normal_user)
@@ -142,7 +134,6 @@ def test_vendor_can_update_own_bank_account(api_client, vendor_user):
         number="5555555555",
         name="John Doe",
         bank_name="Old Bank",
-        subaccount_code="SUB_UPDATE",
     )
 
     api_client.force_authenticate(user=vendor_user.user)
