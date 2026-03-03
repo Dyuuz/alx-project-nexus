@@ -16,7 +16,7 @@ from accounts.services.vendor_service import (
     update_vendor,
     delete_vendor,
 )
-from core.permissions import IsAdminOrSelf, IsAdmin
+from core.permissions import IsAdminOrSelf, IsAdmin, IsEmailVerified
 
 
 class VendorViewSet(ModelViewSet):
@@ -90,10 +90,10 @@ class VendorViewSet(ModelViewSet):
         delete vendor records.
         """
         if self.action == "create":
-            return [IsAuthenticated()]
+            return [IsAuthenticated(), IsEmailVerified()]
 
         if self.action in ["list", "update", "partial_update"]:
-            return [IsAuthenticated(), IsAdminOrSelf()]
+            return [IsAuthenticated(), IsAdminOrSelf(), IsEmailVerified()]
 
         if self.action == "destroy":
             return [IsAuthenticated(), IsAdmin()]
