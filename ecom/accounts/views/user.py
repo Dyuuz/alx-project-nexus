@@ -249,7 +249,7 @@ class PasswordResetViewSet(GenericViewSet):
             {
                 "status": "success",
                 "code": "RESET_REQUEST_ACCEPTED",
-                "message": "If the email exists, a password reset link has been sent."
+                "message": "A password reset link has been sent to your email."
             },
             status=status.HTTP_200_OK,
         )
@@ -392,7 +392,7 @@ class PasswordResetViewSet(GenericViewSet):
 
         # Service handle existence silently
         PasswordResetService.generate_reset_token_link_request(email)
-
+ 
         # Same response (no enumeration)
         return Response(
             {
