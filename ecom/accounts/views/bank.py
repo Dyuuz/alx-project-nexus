@@ -19,7 +19,7 @@ from accounts.services.bank_service import (
     delete_bank_account,
 )
 from core.permissions import (
-    IsBankAccountOwner, IsAdmin
+    IsBankAccountOwner, IsAdmin, IsVendor
 )
 
 class StrictBankThrottle(UserRateThrottle):
@@ -93,10 +93,10 @@ class BankAccountViewSet(ModelViewSet):
         Assign permissions per action.
         """
         if self.action == "create":
-            return [IsAuthenticated()]
+            return [IsAuthenticated(), IsVendor()]
 
         if self.action in ["list", "update", "partial_update"]:
-            return [IsAuthenticated(), IsBankAccountOwner()]
+            return [IsAuthenticated(), IsBankAccountOwner(), IsVendor()]
 
         if self.action == "destroy":
             return [IsAuthenticated(), IsAdmin()]

@@ -16,7 +16,7 @@ from accounts.services.vendor_service import (
     update_vendor,
     delete_vendor,
 )
-from core.permissions import IsAdminOrSelf, IsAdmin, IsEmailVerified
+from core.permissions import IsAdminOrSelf, IsAdmin, IsEmailVerified, IsVendor
 
 
 class VendorViewSet(ModelViewSet):
@@ -93,7 +93,7 @@ class VendorViewSet(ModelViewSet):
             return [IsAuthenticated(), IsEmailVerified()]
 
         if self.action in ["list", "update", "partial_update"]:
-            return [IsAuthenticated(), IsAdminOrSelf(), IsEmailVerified()]
+            return [IsAuthenticated(), IsAdminOrSelf(), IsEmailVerified(), IsVendor()]
 
         if self.action == "destroy":
             return [IsAuthenticated(), IsAdmin()]
