@@ -58,7 +58,9 @@ def update_vendor(vendor_id, data: dict, current_version: int):
         version=current_version
     ).update(
         **data,
-        version=F('version') + 1
+        version=F('version') + 1,
+        activation_status=Vendor.ActivationStatus.INACTIVE,
+        review_status=Vendor.ReviewStatus.UNDER_REVIEW
     )
 
     if updated == 0:
