@@ -17,6 +17,7 @@ from accounts.services.bank_service import (
     create_bank_account,
     update_bank_account,
     delete_bank_account,
+    fetch_account_name,
 )
 from core.permissions import (
     IsBankAccountOwner, IsAdmin, IsVendor
@@ -144,9 +145,24 @@ class BankAccountViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         vendor = request.user.vendor_profile
+        account_name = fetch_account_name(
+            account_number=serializer.validated_data["number"],
+            bank_name=serializer.validated_data["bank_name"],
+        )
+        
+        if not account_name:
+            raise ValidationError(
+                {
+                    "code": "INVALID_BANK_DETAILS",
+                    "message": "Unable to fetch account name. Please verify your bank details.",
+                }
+            )
+
+        data = {**serializer.validated_data, "name": account_name}
+
         bank_account = create_bank_account(
             vendor=vendor,
-            data=serializer.validated_data
+            data=data
         )
 
         read_serializer = BankAccountReadSerializer(bank_account)
@@ -168,9 +184,24 @@ class BankAccountViewSet(ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+        
+        account_name = fetch_account_name(
+            account_number=serializer.validated_data["number"],
+            bank_name=serializer.validated_data["bank_name"],
+        )
+        
+        if not account_name:
+            raise ValidationError(
+                {
+                    "code": "INVALID_BANK_DETAILS",
+                    "message": "Unable to fetch account name. Please verify your bank details.",
+                }
+            )
+
+        data = {**serializer.validated_data, "name": account_name}
 
         bank_account = update_bank_account(
-            instance.pk, data=serializer.validated_data, current_version=instance.version
+            instance.pk, data=data, current_version=instance.version
         )
 
         read_serializer = BankAccountReadSerializer(bank_account)
