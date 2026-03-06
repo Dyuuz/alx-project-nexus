@@ -155,7 +155,7 @@ class VendorViewSet(ModelViewSet):
                 {
                     "status": "success",
                     "code": "CREATE_SUCCESSFUL",
-                    "message": "Bank account created successfully.",
+                    "message": "Vendor account created successfully.",
                     "data": VendorReadSerializer(vendor).data,
                 },
                 status=status.HTTP_201_CREATED
