@@ -11,7 +11,7 @@ router.register("auth", EmailVerificationViewSet, basename="auth")
 router.register("auth", AuthTokenViewSet, basename="auth-token")
 router.register("auth", PasswordResetViewSet, basename="auth-password-reset")
 router.register("auth/users", UserViewSet, basename="user")
-router.register("login", LoginViewSet, basename="login")
+router.register("auth/login", LoginViewSet, basename="login")
 router.register("vendors", VendorViewSet, basename="vendor")
 router.register("bank-accounts", BankAccountViewSet, basename="bank-account")
 
