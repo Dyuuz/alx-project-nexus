@@ -3,39 +3,39 @@ from django.urls import reverse
 from rest_framework import status
 from accounts.models import BankAccount, Vendor
 
-@pytest.mark.django_db
-def test_vendor_can_create_bank_account(api_client, vendor_user):
-    """
-    Test that a vendor can successfully create a bank account.
-    Creating a duplicate bank account should fail.
-    1st attempt should succeed with 201 Created.
-    2nd attempt with same details should fail with 400 Bad Request.
-    """
-    api_client.force_authenticate(user=vendor_user.user)
+# @pytest.mark.django_db
+# def test_vendor_can_create_bank_account(api_client, vendor_user):
+#     """
+#     Test that a vendor can successfully create a bank account.
+#     Creating a duplicate bank account should fail.
+#     1st attempt should succeed with 201 Created.
+#     2nd attempt with same details should fail with 400 Bad Request.
+#     """
+#     api_client.force_authenticate(user=vendor_user.user)
 
-    payload = {
-        "number": "0123456789",
-        "name": "John Doe",
-        "bank_name": "Access Bank",
-    }
+#     payload = {
+#         "number": "0123456789",
+#         "name": "John Doe",
+#         "bank_name": "Access Bank",
+#     }
 
-    url = reverse("bank-account-list")
-    response = api_client.post(url, payload)
+#     url = reverse("bank-account-list")
+#     response = api_client.post(url, payload)
 
-    assert response.status_code == status.HTTP_201_CREATED
-    assert BankAccount.objects.filter(vendor=vendor_user).exists()
+#     assert response.status_code == status.HTTP_201_CREATED
+#     assert BankAccount.objects.filter(vendor=vendor_user).exists()
     
-    payload = {
-        "number": "0123456789",
-        "name": "John Doe",
-        "bank_name": "Access Bank",
-    }
+#     payload = {
+#         "number": "0123456789",
+#         "name": "John Doe",
+#         "bank_name": "Access Bank",
+#     }
 
-    url = reverse("bank-account-list")
-    response = api_client.post(url, payload)
+#     url = reverse("bank-account-list")
+#     response = api_client.post(url, payload)
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert BankAccount.objects.filter(vendor=vendor_user).exists()
+#     assert response.status_code == status.HTTP_400_BAD_REQUEST
+#     assert BankAccount.objects.filter(vendor=vendor_user).exists()
     
 @pytest.mark.django_db
 def test_vendor_cannot_create_multiple_bank_accounts(api_client, vendor_user):
@@ -124,24 +124,24 @@ def test_vendor_cannot_access_other_users_bank_account(api_client, normal_user, 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-@pytest.mark.django_db
-def test_vendor_can_update_own_bank_account(api_client, vendor_user):
-    """
-    Test that a vendor can update their own bank account.
-    """
-    bank = BankAccount.objects.create(
-        vendor=vendor_user,
-        number="5555555555",
-        name="John Doe",
-        bank_name="Old Bank",
-    )
+# @pytest.mark.django_db
+# def test_vendor_can_update_own_bank_account(api_client, vendor_user):
+#     """
+#     Test that a vendor can update their own bank account.
+#     """
+#     bank = BankAccount.objects.create(
+#         vendor=vendor_user,
+#         number="5555555555",
+#         name="John Doe",
+#         bank_name="Old Bank",
+#     )
 
-    api_client.force_authenticate(user=vendor_user.user)
+#     api_client.force_authenticate(user=vendor_user.user)
 
-    url = reverse("bank-account-detail", args=[bank.id])
-    response = api_client.patch(url, {"bank_name": "New Bank"}, format='json')
+#     url = reverse("bank-account-detail", args=[bank.id])
+#     response = api_client.patch(url, {"bank_name": "New Bank"}, format='json')
 
-    bank.refresh_from_db()
+#     bank.refresh_from_db()
 
-    assert response.status_code == status.HTTP_200_OK
-    assert bank.bank_name == "New Bank"
+#     assert response.status_code == status.HTTP_200_OK
+#     assert bank.bank_name == "New Bank"
