@@ -42,24 +42,6 @@ class VendorCreateSerializer(serializers.ModelSerializer):
             )
 
         return attrs
-
-
-    def create(self, validated_data):
-        """
-        Create a new Vendor instance.
-
-        Associates the new vendor with the currently authenticated user
-        (from request context) before saving.
-
-        Args:
-            validated_data (dict): Validated input data.
-
-        Returns:
-            Vendor: The newly created Vendor instance.
-        """
-        request = self.context["request"]
-        validated_data["user"] = request.user
-        return super().create(validated_data)
     
 
 class VendorUpdateSerializer(serializers.ModelSerializer):
@@ -75,23 +57,6 @@ class VendorUpdateSerializer(serializers.ModelSerializer):
             "business_address",
         )
         read_only_fields = ("id", "business_id", "review_status", "activation_status", "updated_at")
-
-
-    def update(self, instance, validated_data):
-        """
-        Update a Vendor instance with validated data.
-
-        Args:
-            instance (Vendor): The Vendor instance to update.
-            validated_data (dict): The validated input data.
-
-        Returns:
-            Vendor: The updated Vendor instance.
-        """
-        for field, value in validated_data.items():
-            setattr(instance, field, value)
-        instance.save()
-        return instance
 
     
 class VendorReadSerializer(serializers.ModelSerializer):
