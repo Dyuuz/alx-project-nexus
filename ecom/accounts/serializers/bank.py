@@ -11,27 +11,13 @@ class BankAccountCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankAccount
         fields = (
-            "id",
             "number",
-            "name",
             "bank_name",
         )
-        read_only_fields = ("id", "verified", "updated_at")
+        read_only_fields = ("id", "name", "verified", "updated_at")
         extra_kwargs = {
             'number': {'validators': []},
         }
-
-    def create(self, validated_data):
-        """
-        Create a new BankAccount instance.
-
-        Associates the new bank account with the currently authenticated vendor
-        before saving.
-        """
-        request = self.context["request"]
-        vendor = request.user.vendor_profile
-        validated_data["vendor"] = vendor
-        return super().create(validated_data)
 
     def validate(self, attrs):
         """
@@ -63,26 +49,9 @@ class BankAccountUpdateSerializer(serializers.ModelSerializer):
         model = BankAccount
         fields = (
             "number",
-            "name",
             "bank_name",
         )
         read_only_fields = ("id", "verified", "updated_at")
-
-    def update(self, instance, validated_data):
-        """
-        Update an existing BankAccount instance with validated data.
-        
-        Args:
-            instance (BankAccount): The instance to update.
-            validated_data (dict): The validated input data.
-        
-        Returns:
-            BankAccount: The updated BankAccount instance.
-        """
-        for field, value in validated_data.items():
-            setattr(instance, field, value)
-        instance.save()
-        return instance
     
 
 class BankAccountReadSerializer(serializers.ModelSerializer):
