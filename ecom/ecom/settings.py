@@ -329,150 +329,81 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Shared components used in both modes
+_BASE_FORMATTERS = {
+    "json": {
+        "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+        "format": "%(levelname)s %(asctime)s %(name)s %(message)s %(request_id)s %(user_id)s",
+    },
+}
+
+_BASE_FILTERS = {
+    "request_user": {
+        "()": "core.log_configs.logging_filters.RequestUserFilter",
+    },
+}
+
+_BASE_CONSOLE_HANDLER = {
+    "class": "logging.StreamHandler",
+    "formatter": "json",
+    "filters": ["request_user"],
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": _BASE_FORMATTERS,
+    "filters": _BASE_FILTERS,
+    "handlers": {"console": _BASE_CONSOLE_HANDLER},
+    "root": {"handlers": ["console"], "level": "INFO"},
+}
+
 if not DEBUG:
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-
-        "formatters": {
-            "json": {
-                "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
-                "format": (
-                    "%(levelname)s "
-                    "%(asctime)s "
-                    "%(name)s "
-                    "%(message)s "
-                    "%(request_id)s "
-                    "%(user_id)s "
-                ),
-            },
-        },
-
-        "filters": {
-            "request_user": {
-                "()": "core.log_configs.logging_filters.RequestUserFilter",
-            },
-        },
-
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "formatter": "json",
-                "filters": ["request_user"],
-            },
-        },
-
-        # Root logger only
-        "root": {
-            "handlers": ["console"],
-            "level": "INFO",
-        },
-    }
+    pass  # LOGGING is already correct for production
 
 else:
     LOG_DIR = BASE_DIR / "logs"
     LOG_DIR.mkdir(exist_ok=True)
 
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "json": {
-                "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
-                "format": "%(levelname)s %(asctime)s %(name)s %(message)s %(request_id)s %(user_id)s",
-            },
-            "verbose": {
-                "format": "[{levelname}] {asctime} {process:d} {name}: {message}",
-                "style": "{",
-            },
-        },
-        
-        "filters": {
-            "info_only": {
-                "()": "core.log_configs.logging_filters.InfoOnlyFilter",
-            },
-            "request_user": {
-                "()": "core.log_configs.logging_filters.RequestUserFilter",
-            },
-        },
-        
-        # ROOT LOGGER (global fallback)
-        "root": {
-            "handlers": ["console", "app_file", "app_error_file"],
-            "level": "INFO",
-        },
-        
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "formatter": "json",
-                "filters": ["request_user"],
-            },
-            "app_file": {
-                "class": "logging.handlers.RotatingFileHandler",
-                "filename": LOG_DIR / "app.log",
-                "maxBytes": 5 * 1024 * 1024,
-                "backupCount": 5,
-                "formatter": "json",
-                "level": "INFO",
-                "filters": ["info_only", "request_user"],
-            },
-            "app_error_file": {
-                "class": "logging.handlers.RotatingFileHandler",
-                "filename": LOG_DIR / "app_errors.log",
-                "maxBytes": 5 * 1024 * 1024,
-                "backupCount": 5,
-                "formatter": "json",
-                "level": "ERROR",
-                "filters": ["request_user"],
-            },
-        },
-        
-        # Optional named loggers
-        "loggers": {
-            "django.utils.autoreload": {
-                "handlers": ["console"],
-                "level": "INFO", 
-                "propagate": False,
-            },
-            "urllib3.connectionpool": {
-                "handlers": ["console"],
-                "level": "INFO", 
-                "propagate": False,
-            },
-            # Each specific apps
-            # "accounts": {
-            #     "handlers": ["console", "app_file", "app_error_file"],
-            #     "level": "INFO",
-            #     "propagate": False,
-            # },
-            # "cart": {
-            #     "handlers": ["console", "app_file", "app_error_file"],
-            #     "level": "INFO",
-            #     "propagate": False,
-            # },
-            # "core": {
-            #     "handlers": ["console", "app_file", "app_error_file"],
-            #     "level": "INFO",
-            #     "propagate": False,
-            # },
-            # "orders": {
-            #     "handlers": ["console", "app_file", "app_error_file"],
-            #     "level": "INFO",
-            #     "propagate": False,
-            # },
-            # "payments": {
-            #     "handlers": ["console", "app_file", "app_error_file"],
-            #     "level": "INFO",
-            #     "propagate": False,
-            # },
-            # "products": {
-            #     "handlers": ["console", "app_file", "app_error_file"],
-            #     "level": "INFO",
-            #     "propagate": False,
-            # },
-        },
+    def _make_rotating_handler(filename, level, filters):
+        return {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / filename,
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "json",
+            "level": level,
+            "filters": filters,
+        }
+
+    LOGGING["formatters"]["verbose"] = {
+        "format": "[{levelname}] {asctime} {process:d} {name}: {message}",
+        "style": "{",
     }
+    LOGGING["filters"]["info_only"] = {
+        "()": "core.log_configs.logging_filters.InfoOnlyFilter",
+    }
+    LOGGING["handlers"].update({
+        "app_file":       _make_rotating_handler("app.log",        "INFO",  ["info_only", "request_user"]),
+        "app_error_file": _make_rotating_handler("app_errors.log", "ERROR", ["request_user"]),
+    })
+    LOGGING["root"]["handlers"] = ["console", "app_file", "app_error_file"]
+    LOGGING["loggers"] = {
+        "django.utils.autoreload": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "urllib3.connectionpool":  {"handlers": ["console"], "level": "INFO", "propagate": False},
+    }
+    
+# Automatically register all your Django apps instead of copy-pasting
+# APP_NAMES = ["accounts", "cart", "core", "orders", "payments", "products"]
+
+# LOGGING["loggers"].update({
+#     app: {
+#         "handlers": ["console", "app_file", "app_error_file"],
+#         "level": "INFO",
+#         "propagate": False,
+#     }
+#     for app in APP_NAMES
+# })
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
