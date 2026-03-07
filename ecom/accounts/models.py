@@ -157,6 +157,10 @@ class AuthSession(models.Model):
         return True, "OTP verified successfully"
 
 class BankAccount(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        INACTIVE = "INACTIVE", "Inactive"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     vendor = models.OneToOneField(
         Vendor,
@@ -166,6 +170,12 @@ class BankAccount(models.Model):
     number = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200, help_text="Provide the exact bank account name")
     bank_name = models.CharField(max_length=200)
+
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.ACTIVE
+    )
     
     version = models.PositiveIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
