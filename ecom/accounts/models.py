@@ -188,6 +188,14 @@ class BankAccount(models.Model):
     def __str__(self):
         return f"{self.vendor.user.email} - {self.bank_name}"
 
+    def activate(self):
+        self.status = self.Status.ACTIVE
+        self.save(update_fields=["status"])
+
+    def deactivate(self):
+        self.status = self.Status.INACTIVE
+        self.save(update_fields=["status"])
+
 class BlackListAccessToken(models.Model):
     jti = models.CharField(max_length=255, unique=True)
     blacklisted_at = models.DateTimeField(auto_now_add=True)
