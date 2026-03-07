@@ -2,7 +2,7 @@ from django.db import transaction
 from accounts.models import BankAccount
 from core.utils.mail_sender import send_mail_helper
 from rest_framework.exceptions import ValidationError
-from core.exceptions import ConflictException
+from core.errors import ConflictException
 from django.db.models import F
 from django.conf import settings
 import requests

@@ -5,7 +5,7 @@ from products.models import Product
 from collections import defaultdict
 from asgiref.sync import async_to_sync
 from core.utils.mail_sender import send_mail_helper
-from core.exceptions import ConflictException
+from core.errors import ConflictException
 import logging
 
 logger = logging.getLogger(__name__)
