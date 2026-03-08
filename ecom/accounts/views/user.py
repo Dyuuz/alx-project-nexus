@@ -17,7 +17,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from accounts.serializers.user import (
     UserCreateSerializer, UserUpdateSerializer, UserReadSerializer,
     PasswordConfirmSerializer, PasswordResetRequestSerializer, 
-    PasswordChangeVerifySerializer, TokenRefreshSerializer,
+    PasswordChangeVerifySerializer, AccessTokenRefreshSerializer,
     ResponseSerializer,
     ResponseDataSerializer, LoginSerializer
 )
@@ -573,7 +573,7 @@ class AuthTokenViewSet(GenericViewSet):
     """
     
     permission_classes = [AllowAny]
-    serializer_class = TokenRefreshSerializer
+    serializer_class = AccessTokenRefreshSerializer
     renderer_classes = [JSONRenderer]
     throttle_classes = [ScopedRateThrottle]
     
@@ -605,17 +605,7 @@ class AuthTokenViewSet(GenericViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        refresh_token = serializer.validated_data["refresh"]
-
-        if not refresh_token:
-            return Response(
-                {
-                    "status": "error",
-                    "code": "REFRESH_TOKEN_REQUIRED",
-                    "message": "Refresh token is required."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        refresh_token = serializer.validated_data["refresh_token"]
 
         try:
             refresh = RefreshToken(refresh_token)
@@ -631,6 +621,61 @@ class AuthTokenViewSet(GenericViewSet):
                     }
                 },
                 status=status.HTTP_200_OK,
+            )
+
+        except TokenError:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_REFRESH_TOKEN",
+                    "message": "Invalid or expired refresh token."
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        
+    
+    @extend_schema(
+        description="Log out by blacklisting the provided refresh token.",
+        responses={
+            200: ResponseDataSerializer,
+            400: ResponseSerializer,
+            401: ResponseSerializer,
+        },
+    )
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="logout",
+    )
+    def logout(self, request):
+        """
+        Log out a user by blacklisting their refresh token.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            refresh_token = serializer.validated_data["refresh_token"]
+            refresh = RefreshToken(refresh_token)
+            refresh.blacklist()
+
+            return Response(
+                {
+                    "status": "success",
+                    "code": "LOGOUT_SUCCESSFUL",
+                    "message": "User logged out successfully."
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except TokenError:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_REFRESH_TOKEN",
+                    "message": "Invalid or expired refresh token."
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         except TokenError:

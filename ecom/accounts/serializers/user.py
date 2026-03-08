@@ -177,8 +177,37 @@ class LoginSerializer(serializers.Serializer):
         return value
 
 
-class TokenRefreshSerializer(serializers.Serializer):
-    refresh = serializers.CharField()
+class RefreshTokenSerializer(serializers.Serializer):
+    """ 
+    Base serializer for handling refresh token operations.
+    - Validates presence and format of refresh token for JWT operations.
+    - Used as a parent class for both access token refresh and logout serializers.
+    - Ensures that the refresh token is not empty before processing.
+    - Provides a common validation method for refresh token across different views.
+    """
+    refresh_token = serializers.CharField()
+
+    def validate_refresh_token(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Refresh token cannot be empty.")
+        return value
+
+
+class AccessTokenRefreshSerializer(RefreshTokenSerializer):
+    """
+    Serializer for refreshing access tokens.
+    - Inherits from RefreshTokenSerializer to validate presence of refresh token.
+    """
+    pass
+
+
+class LogoutSerializer(RefreshTokenSerializer):
+    """
+    Serializer for logging out users.
+    - Validates presence of refresh token for JWT logout.
+    - Ensures token is not empty before processing logout.
+    """
+    pass
 
 
 class ResponseSerializer(serializers.Serializer):
