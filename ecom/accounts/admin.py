@@ -39,6 +39,7 @@ class VendorAdmin(admin.ModelAdmin):
 class BankAccountAdmin(admin.ModelAdmin):
     list_display = ("name", "bank_name", "number", "status")
     search_fields = ("name", "bank_name", "vendor__user__email")
+    ordering = ("-created_at",)
     list_select_related = ("vendor", "vendor__user")  # avoids N+1 chain
     list_per_page = 25
     raw_id_fields = ("vendor",)
