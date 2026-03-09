@@ -71,6 +71,7 @@ class Product(models.Model):
         default=0,
         null=True, blank=True
     )
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

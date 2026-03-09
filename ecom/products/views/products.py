@@ -4,6 +4,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
+from django.core.cache import cache
 
 from products.models import Product
 from rest_framework.exceptions import PermissionDenied
@@ -16,6 +17,8 @@ from products.services.products import (
 from core.permissions import (
     IsProductOwnerOrAdmin, IsAdmin, IsVendor, IsCustomer
 )
+import logging
+logger = logging.getLogger(__name__)
 
 class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
@@ -31,11 +34,19 @@ class ProductViewSet(ModelViewSet):
 
         # Vendors only see their own products
         if user.is_authenticated and user.role == "vendor" and hasattr(user, "vendor_profile"):
-            return Product.objects.filter(vendor=user.vendor_profile)
+            return Product.objects.filter(vendor=user.vendor_profile).select_related("vendor")
 
-        # Customers + admins see all products
-        return Product.objects.all()
-    
+        # Customers + admins see all products using try cache first
+        cached_products = cache.get("all_active_products")
+        if cached_products is not None:
+            logger.info("Cache hit for all active products")
+            return cached_products
+
+        logger.info("up next)")
+        queryset = Product.objects.filter(is_active=True).select_related("vendor").order_by("-created_at")
+        cache.set("all_active_products", list(queryset), timeout=60 * 60 * 24)
+        return queryset
+        
     def get_throttles(self):
         if self.action in ["list", "retrieve"]:
             self.throttle_scope = "product_read"
