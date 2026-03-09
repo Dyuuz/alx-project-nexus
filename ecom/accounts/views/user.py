@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema, OpenApiResponse
@@ -571,15 +572,25 @@ class AuthTokenViewSet(GenericViewSet):
     Provides endpoint for generating a new access token
     using a valid refresh token.
     """
-    
-    permission_classes = [AllowAny]
     serializer_class = AccessTokenRefreshSerializer
     renderer_classes = [JSONRenderer]
     throttle_classes = [ScopedRateThrottle]
     
+    def get_permissions(self):
+        if self.action == "logout":
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
+    def get_authenticators(self):
+        if self.action == "logout":
+            return [JWTAuthentication()]
+        return []
+    
     def get_throttles(self):
         if self.action == "refresh_token":
             self.throttle_scope = "token_refresh"
+        elif self.action == "logout":
+            self.throttle_scope = "logout"
         return super().get_throttles()
 
     @extend_schema(
@@ -666,16 +677,6 @@ class AuthTokenViewSet(GenericViewSet):
                     "message": "User logged out successfully."
                 },
                 status=status.HTTP_200_OK,
-            )
-
-        except TokenError:
-            return Response(
-                {
-                    "status": "error",
-                    "code": "INVALID_REFRESH_TOKEN",
-                    "message": "Invalid or expired refresh token."
-                },
-                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         except TokenError:
