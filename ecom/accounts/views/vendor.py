@@ -126,7 +126,7 @@ class VendorViewSet(ModelViewSet):
             {
                 "status": "success",
                 "code": "FETCH_SUCCESSFUL",
-                "message": "Bank account retrieved successfully.",
+                "message": "Vendor account retrieved successfully.",
                 "data": serializer.data
             },
             status=status.HTTP_200_OK
