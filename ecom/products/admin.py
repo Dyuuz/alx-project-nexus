@@ -6,41 +6,27 @@ from products.services.products import (
     delete_product,
 )
 
-admin.site.register(Category)
-
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
-        "name",
-        "vendor",
-        "original_price",
-        "discount_percent",
-        "discount_amount",
-        "initial_stock",
-        "stock",
-        "last_activity_at"
+        "name", "get_vendor", "get_category", "original_price",
+        "stock", "is_active", "created_at"
     )
-    list_filter = ("vendor", "category")
-    search_fields = ("name", "vendor__business_name")
-    readonly_fields = ("last_activity_at","initial_stock")
+    search_fields = ("name", "vendor__business_name", "category__name")
+    ordering = ("-created_at",)
+    list_per_page = 25
+    list_select_related = ("vendor", "category")  # avoids N+1 on vendor/category
+    raw_id_fields = ("vendor", "category")        # prevents loading full dropdowns on edit page
+    readonly_fields = (
+        "id", "slug", "public_id", "srcURL",
+        "created_at", "updated_at", "last_activity_at"
+    )
+    list_filter = ("is_active", "category", "vendor")
 
-    def save_model(self, request, obj, form, change):
-        data = form.cleaned_data
+    def get_vendor(self, obj):
+        return obj.vendor.business_name
+    get_vendor.short_description = "Vendor"
 
-        if change:
-            product = update_product(obj.id, **data)
-        else:
-            product = create_product(**data)
-            obj.pk = product.pk 
-
-        obj.refresh_from_db()
-
-    def delete_model(self, request, obj):
-        delete_product(obj)
-        
-    def save_related(self, request, form, formsets, change):
-        """
-        Prevent Django admin from trying to re-save M2M relationships
-        when persistence is handled in the service layer.
-        """
-        pass
+    def get_category(self, obj):
+        return obj.category.name if obj.category else "—"
+    get_category.short_description = "Category"
