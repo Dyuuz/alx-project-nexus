@@ -12,35 +12,35 @@ User = get_user_model()
 def api_client():
     return APIClient()
 
+
 @pytest.fixture
-def admin_user(db):
+def admin_user(db, worker_id="master"):
     return User.objects.create_superuser(
-        email="admin@test.com",
+        email=f"admin_{worker_id}@test.com",
         password="adminpass123",
         first_name="Admin",
         last_name="User",
-        phone_number="+2348012345678",
+        phone_number=f"+2348012{worker_id.replace('gw', '0')}5678",
         email_verified=True,
         role="admin",
     )
 
+
 @pytest.fixture
-def normal_user(db):
+def normal_user(db, worker_id="master"):
     return User.objects.create_user(
-        email="user@test.com",
+        email=f"user_{worker_id}@test.com",
         password="userpass123",
         first_name="Normal",
         last_name="User",
-        phone_number="+2348098765432",
+        phone_number=f"+2348098{worker_id.replace('gw', '0')}5432",
         email_verified=True,
         role="customer",
     )
 
+
 @pytest.fixture
 def vendor_user(normal_user):
-    """
-    Returns a Vendor instance linked to a CustomUser with role='vendor'.
-    """
     normal_user.role = 'vendor'
     normal_user.save()
     vendor = Vendor.objects.create(
@@ -53,14 +53,14 @@ def vendor_user(normal_user):
 
 
 @pytest.fixture
-def product_vendor_user(db):
+def product_vendor_user(db, worker_id="master"):
     user = User.objects.create_user(
-        email="vendor@test.com",
+        email=f"vendor_{worker_id}@test.com",
         password="password123",
         role="vendor",
         first_name="Vendor",
         last_name="User",
-        phone_number="+2348012345679",
+        phone_number=f"+2348012{worker_id.replace('gw', '1')}5679",
     )
     Vendor.objects.create(
         user=user,
@@ -70,15 +70,16 @@ def product_vendor_user(db):
     )
     return user
 
+
 @pytest.fixture
-def other_vendor_user(db):
+def other_vendor_user(db, worker_id="master"):
     user = User.objects.create_user(
-        email="vendor2@test.com",
+        email=f"vendor2_{worker_id}@test.com",
         password="password123",
         role="vendor",
         first_name="Other",
         last_name="Vendor",
-        phone_number="+2348012345680",
+        phone_number=f"+2348012{worker_id.replace('gw', '2')}5680",
     )
     Vendor.objects.create(
         user=user,
@@ -93,6 +94,7 @@ def other_vendor_user(db):
 def category(db):
     return Category.objects.create(name="Electronics")
 
+
 @pytest.fixture
 def product(category, product_vendor_user):
     return Product.objects.create(
@@ -104,10 +106,12 @@ def product(category, product_vendor_user):
         stock=1,
         vendor=product_vendor_user.vendor_profile,
     )
-    
+
+
 @pytest.fixture
 def payment_factory():
     return PaymentFactory
+
 
 @pytest.fixture
 def order_factory():
