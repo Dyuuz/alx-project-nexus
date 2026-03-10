@@ -67,7 +67,7 @@ jobs:
 
       - name: Run tests
         working-directory: ecom
-        run: pytest --reuse-db
+        run: pytest
 
   deploy:
     needs: test   # 🔥 THIS IS IMPORTANT
