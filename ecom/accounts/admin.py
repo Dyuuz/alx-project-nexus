@@ -7,7 +7,7 @@ class CustomUserAdmin(admin.ModelAdmin):
     list_display = ("email", "first_name", "last_name", "role", "is_staff", "is_active", "created_at")
     search_fields = ("email", "first_name", "last_name")
     ordering = ("-created_at",)
-    list_select_related = True
+    list_select_related = True     # JOIN everything (all FK/OneToOne)
     list_per_page = 25
     readonly_fields = ("id", "created_at", "updated_at", "last_login", "version")
     raw_id_fields = ()
@@ -26,9 +26,10 @@ class VendorAdmin(admin.ModelAdmin):
     list_display = ("business_name", "get_email", "review_status", "activation_status", "created_at")
     search_fields = ("business_name", "user__email")
     ordering = ("-created_at",)
-    list_select_related = ("user",)  # avoids N+1 on user__email
+    list_select_related = ("user",)  # avoids N+1 on user__email and JOINs only user
     list_per_page = 25
     raw_id_fields = ("user",)  # prevents loading ALL users into a dropdown
+    # replace FK dropdowns on change pages
 
     def get_email(self, obj):
         return obj.user.email

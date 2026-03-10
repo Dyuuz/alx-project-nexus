@@ -17,11 +17,11 @@ class OrderAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
     list_filter = ("status", "payment_method")
     list_select_related = ("customer", "cart")
-    list_per_page = 25
+    list_per_page = 25  # pagination to prevent loading too many rows at once
     readonly_fields = (
         "id", "customer", "cart", "total_amount",
         "payment_reminder_sent", "final_payment_reminder_sent", "created_at",
-    )
+    ) # plain text for timestamps & auto fields
     raw_id_fields = ("customer", "cart")
     inlines = [OrderItemInline]
 
@@ -30,7 +30,8 @@ class OrderAdmin(admin.ModelAdmin):
         "shipping_address", "billing_address", "payment_method",
         "total_amount", "payment_reminder_sent", "final_payment_reminder_sent",
         "created_at",
-    )
+    ) # explicitly define what renders on the change page and in what order, to avoid 
+    # heavy/unused fields and N+1 queries
 
     def get_customer(self, obj):
         return obj.customer.email if obj.customer else "—"
