@@ -16,6 +16,7 @@ import dj_database_url
 from dotenv import load_dotenv
 import cloudinary
 import environ
+import sys
 import os
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
@@ -343,7 +344,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Shared components used in both modes
 _BASE_FORMATTERS = {
     "json": {
-        "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+        "()": "pythonjsonlogger.json.JsonFormatter",
         "format": "%(levelname)s %(asctime)s %(name)s %(message)s %(request_id)s %(user_id)s",
     },
 }
@@ -415,6 +416,14 @@ else:
 #     }
 #     for app in APP_NAMES
 # })
+
+if "pytest" in sys.modules:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "test_db.sqlite3",
+        }
+    }
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
