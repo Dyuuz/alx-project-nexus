@@ -70,7 +70,7 @@ jobs:
         run: pytest
 
   deploy:
-    needs: test   # 🔥 THIS IS IMPORTANT
+    needs: test   # THIS IS IMPORTANT
     runs-on: ubuntu-latest
 
     steps:
