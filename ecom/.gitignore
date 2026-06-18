@@ -139,5 +139,5 @@ dmypy.json
 cython_debug/
 
 # Text Editor
-.vscode
+.vscode/
 settings.json
